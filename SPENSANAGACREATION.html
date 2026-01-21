@@ -1,0 +1,2724 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Penilaian Ujian Meja Makalah - SMP Negeri 1 Nagawutung</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        * { font-family: 'Poppins', sans-serif; }
+        .sidebar-transition { transition: all 0.3s ease-in-out; }
+        .card-hover:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
+        .gradient-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .gradient-success { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+        .gradient-warning { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .gradient-info { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .gradient-dark { background: linear-gradient(135deg, #434343 0%, #000000 100%); }
+        .glass-effect { background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); }
+        .table-row-hover:hover { background: linear-gradient(90deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%); }
+        .input-focus:focus { box-shadow: 0 0 0 3px rgba(102,126,234,0.3); }
+        .animate-fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .scrollbar-thin::-webkit-scrollbar { width: 6px; }
+        .scrollbar-thin::-webkit-scrollbar-track { background: #f1f1f1; }
+        .scrollbar-thin::-webkit-scrollbar-thumb { background: #667eea; border-radius: 3px; }
+        @media print { .no-print { display: none !important; } }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <!-- Login Page -->
+    <div id="loginPage" class="min-h-screen flex items-center justify-center gradient-primary p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 animate-fade-in">
+            <div class="text-center mb-8">
+                <div class="w-20 h-20 mx-auto bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center mb-4">
+                    <i class="fas fa-graduation-cap text-white text-3xl"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-800">Sistem Penilaian</h1>
+                <p class="text-gray-500 text-sm mt-1">Ujian Meja Makalah - Deep Learning</p>
+                <p class="text-indigo-600 font-semibold text-sm">SMP Negeri 1 Nagawutung</p>
+            </div>
+            <form id="loginForm" class="space-y-5">
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-2">Username</label>
+                    <div class="relative">
+                        <i class="fas fa-user absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <input type="text" id="username" class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg input-focus focus:outline-none focus:border-indigo-500 transition" placeholder="Masukkan username">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-2">Password</label>
+                    <div class="relative">
+                        <i class="fas fa-lock absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <input type="password" id="password" class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg input-focus focus:outline-none focus:border-indigo-500 transition" placeholder="Masukkan password">
+                    </div>
+                </div>
+                <button type="submit" class="w-full gradient-primary text-white py-3 rounded-lg font-semibold hover:opacity-90 transition transform hover:scale-[1.02] active:scale-[0.98]">
+                    <i class="fas fa-sign-in-alt mr-2"></i>Login
+                </button>
+            </form>
+            <div id="loginError" class="hidden mt-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm text-center">
+                <i class="fas fa-exclamation-circle mr-1"></i> Username atau password salah!
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard" class="hidden min-h-screen">
+        <!-- Mobile Overlay -->
+        <div id="sidebarOverlay" class="hidden fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden" onclick="toggleSidebar()"></div>
+        
+        <!-- Sidebar -->
+        <aside id="sidebar" class="fixed left-0 top-0 h-full w-64 gradient-primary text-white z-50 sidebar-transition transform -translate-x-full lg:translate-x-0 overflow-y-auto scrollbar-thin">
+            <div class="p-5 border-b border-white/20">
+                <div class="flex items-center space-x-3">
+                    <div id="sidebarLogo" class="w-12 h-12 bg-white rounded-full flex items-center justify-center">
+                        <i class="fas fa-graduation-cap text-indigo-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-sm">SMP N 1 Nagawutung</h2>
+                        <p class="text-xs text-white/70">Sistem Penilaian</p>
+                    </div>
+                </div>
+            </div>
+            <nav class="p-4">
+                <p class="text-xs text-white/50 uppercase tracking-wider mb-3">Menu Utama</p>
+                <ul class="space-y-2" id="sidebarMenu"></ul>
+            </nav>
+            <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/20">
+                <button onclick="logout()" class="w-full bg-white/10 hover:bg-white/20 py-2 rounded-lg transition flex items-center justify-center space-x-2">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="lg:ml-64 min-h-screen">
+            <!-- Top Navbar -->
+            <header class="glass-effect sticky top-0 z-30 px-4 py-3 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <button onclick="toggleSidebar()" class="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition">
+                            <i class="fas fa-bars text-gray-600 text-xl"></i>
+                        </button>
+                        <div>
+                            <h1 id="pageTitle" class="text-lg font-semibold text-gray-800">Dashboard</h1>
+                            <p class="text-xs text-gray-500" id="currentDate"></p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div id="syncStatusIndicator" class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 text-xs cursor-pointer hover:opacity-80 transition" onclick="showSyncInfo()">
+                            <span class="w-2 h-2 rounded-full bg-gray-400" id="syncDot"></span>
+                            <span id="syncText">Connecting...</span>
+                        </div>
+                        <div class="hidden sm:block text-right">
+                            <p class="text-sm font-medium text-gray-800" id="userNameDisplay"></p>
+                            <p class="text-xs text-gray-500" id="userRoleDisplay"></p>
+                        </div>
+                        <div class="w-10 h-10 gradient-primary rounded-full flex items-center justify-center">
+                            <i class="fas fa-user text-white"></i>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Content Area -->
+            <div class="p-4 md:p-6" id="contentArea"></div>
+        </main>
+    </div>
+
+    <script>
+        // ==================== DATA STORE ====================
+        const defaultData = {
+            users: [
+                { id: 1, username: 'admin', password: 'admin123', name: 'Administrator', role: 'admin' },
+                { id: 2, username: 'penguji1', password: 'penguji123', name: 'Penguji 1', role: 'penguji' },
+                { id: 3, username: 'penguji2', password: 'penguji123', name: 'Penguji 2', role: 'penguji' }
+            ],
+            students: [],
+            scores: [],
+            beritaAcara: [],
+            settings: {
+                schoolLogo: '',
+                ministryLogo: '',
+                principalName: '',
+                principalNIP: '',
+                kopDinas: 'DINAS PENDIDIKAN KABUPATEN LEMBATA\nSMP NEGERI 1 NAGAWUTUNG\nAlamat: Jl. Pendidikan No. 1, Nagawutung, Lembata, NTT'
+            },
+            assessmentAspects: [
+                { id: 1, name: 'Kemampuan Presentasi', weight: 15, description: 'Kemampuan menyampaikan materi dengan jelas' },
+                { id: 2, name: 'Penguasaan Materi', weight: 25, description: 'Pemahaman mendalam tentang topik makalah' },
+                { id: 3, name: 'Kemampuan Menjawab Pertanyaan', weight: 20, description: 'Ketepatan dan kedalaman jawaban' },
+                { id: 4, name: 'Kreativitas & Inovasi', weight: 15, description: 'Ide-ide baru dan pendekatan inovatif' },
+                { id: 5, name: 'Ketepatan Waktu', weight: 10, description: 'Manajemen waktu presentasi' },
+                { id: 6, name: 'Kerapian Makalah', weight: 15, description: 'Sistematika dan format penulisan' }
+            ]
+        };
+
+        let appData = JSON.parse(localStorage.getItem('examSystemData')) || JSON.parse(JSON.stringify(defaultData));
+        
+        // Ensure beritaAcara array exists for older data
+        if (!appData.beritaAcara) {
+            appData.beritaAcara = [];
+        }
+        
+        let currentUser = null;
+
+        function saveData() {
+            localStorage.setItem('examSystemData', JSON.stringify(appData));
+        }
+
+        // ==================== AUTH ====================
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            const user = appData.users.find(u => u.username === username && u.password === password);
+            
+            if (user) {
+                currentUser = user;
+                document.getElementById('loginError').classList.add('hidden');
+                document.getElementById('loginPage').classList.add('hidden');
+                document.getElementById('dashboard').classList.remove('hidden');
+                initDashboard();
+            } else {
+                document.getElementById('loginError').classList.remove('hidden');
+            }
+        });
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('dashboard').classList.add('hidden');
+            document.getElementById('loginPage').classList.remove('hidden');
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+        }
+
+        // ==================== SIDEBAR ====================
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        }
+
+        function initDashboard() {
+            document.getElementById('userNameDisplay').textContent = currentUser.name;
+            document.getElementById('userRoleDisplay').textContent = currentUser.role === 'admin' ? 'Administrator' : 'Penguji';
+            document.getElementById('currentDate').textContent = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            
+            renderSidebar();
+            navigateTo('dashboard');
+            updateSidebarLogo();
+            
+            // Auto-connect Firebase if configured
+            autoConnectFirebase();
+        }
+
+        function updateSidebarLogo() {
+            const logoEl = document.getElementById('sidebarLogo');
+            if (appData.settings.schoolLogo) {
+                logoEl.innerHTML = `<img src="${appData.settings.schoolLogo}" class="w-12 h-12 rounded-full object-cover">`;
+            }
+        }
+
+        function renderSidebar() {
+            const menu = document.getElementById('sidebarMenu');
+            let menuItems = [];
+            
+            if (currentUser.role === 'admin') {
+                menuItems = [
+                    { id: 'dashboard', icon: 'fas fa-tachometer-alt', label: 'Dashboard' },
+                    { id: 'penguji', icon: 'fas fa-user-tie', label: 'Data Penguji' },
+                    { id: 'siswa', icon: 'fas fa-users', label: 'Data Siswa' },
+                    { id: 'rekap', icon: 'fas fa-chart-bar', label: 'Rekap Nilai' },
+                    { id: 'beritaAcaraAdmin', icon: 'fas fa-file-signature', label: 'Berita Acara' },
+                    { id: 'formManual', icon: 'fas fa-clipboard-list', label: 'Form Penilaian Manual' },
+                    { id: 'backupRestore', icon: 'fas fa-database', label: 'Backup & Sinkronisasi' },
+                    { id: 'pengaturan', icon: 'fas fa-cog', label: 'Pengaturan' }
+                ];
+            } else {
+                menuItems = [
+                    { id: 'dashboard', icon: 'fas fa-tachometer-alt', label: 'Dashboard' },
+                    { id: 'siswa', icon: 'fas fa-users', label: 'Data Siswa' },
+                    { id: 'penilaian', icon: 'fas fa-clipboard-check', label: 'Penilaian' },
+                    { id: 'rekap', icon: 'fas fa-chart-bar', label: 'Rekap Nilai' },
+                    { id: 'beritaAcara', icon: 'fas fa-file-signature', label: 'Berita Acara' }
+                ];
+            }
+            
+            menu.innerHTML = menuItems.map(item => `
+                <li>
+                    <a href="#" onclick="navigateTo('${item.id}')" class="menu-item flex items-center space-x-3 p-3 rounded-lg hover:bg-white/10 transition" data-page="${item.id}">
+                        <i class="${item.icon}"></i>
+                        <span>${item.label}</span>
+                    </a>
+                </li>
+            `).join('');
+        }
+
+        function setActiveMenu(pageId) {
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.classList.remove('bg-white/20');
+                if (item.dataset.page === pageId) {
+                    item.classList.add('bg-white/20');
+                }
+            });
+        }
+
+        // ==================== NAVIGATION ====================
+        function navigateTo(page) {
+            setActiveMenu(page);
+            document.getElementById('pageTitle').textContent = getPageTitle(page);
+            
+            // Close sidebar on mobile
+            if (window.innerWidth < 1024) {
+                document.getElementById('sidebar').classList.add('-translate-x-full');
+                document.getElementById('sidebarOverlay').classList.add('hidden');
+            }
+
+            const content = document.getElementById('contentArea');
+            content.innerHTML = '<div class="flex justify-center py-20"><i class="fas fa-spinner fa-spin text-4xl text-indigo-600"></i></div>';
+            
+            setTimeout(() => {
+                switch(page) {
+                    case 'dashboard': renderDashboard(); break;
+                    case 'penguji': renderPenguji(); break;
+                    case 'siswa': renderSiswa(); break;
+                    case 'penilaian': renderPenilaian(); break;
+                    case 'rekap': renderRekap(); break;
+                    case 'beritaAcara': renderBeritaAcara(); break;
+                    case 'beritaAcaraAdmin': renderBeritaAcaraAdmin(); break;
+                    case 'formManual': renderFormManual(); break;
+                    case 'backupRestore': renderBackupRestore(); break;
+                    case 'pengaturan': renderPengaturan(); break;
+                }
+            }, 200);
+        }
+
+        function getPageTitle(page) {
+            const titles = {
+                dashboard: 'Dashboard',
+                penguji: 'Data Penguji',
+                siswa: 'Data Siswa',
+                penilaian: 'Penilaian Ujian',
+                rekap: 'Rekap Nilai',
+                beritaAcara: 'Berita Acara',
+                beritaAcaraAdmin: 'Berita Acara',
+                formManual: 'Form Penilaian Manual',
+                backupRestore: 'Backup & Sinkronisasi',
+                pengaturan: 'Pengaturan'
+            };
+            return titles[page] || 'Dashboard';
+        }
+
+        // ==================== DASHBOARD PAGE ====================
+        function renderDashboard() {
+            const totalStudents = appData.students.length;
+            const totalExaminers = appData.users.filter(u => u.role === 'penguji').length;
+            const totalScored = [...new Set(appData.scores.map(s => s.studentId))].length;
+            const avgScore = appData.scores.length > 0 
+                ? (appData.scores.reduce((a, b) => a + b.totalScore, 0) / appData.scores.length).toFixed(1)
+                : 0;
+            const totalBeritaAcara = appData.beritaAcara ? appData.beritaAcara.length : 0;
+
+            document.getElementById('contentArea').innerHTML = `
+                <div class="animate-fade-in">
+                    <!-- Stats Cards -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+                        <div class="gradient-primary rounded-xl p-5 text-white card-hover transition-all duration-300">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-white/70 text-sm">Total Siswa</p>
+                                    <h3 class="text-3xl font-bold">${totalStudents}</h3>
+                                </div>
+                                <div class="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-users text-2xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="gradient-success rounded-xl p-5 text-white card-hover transition-all duration-300">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-white/70 text-sm">Penguji</p>
+                                    <h3 class="text-3xl font-bold">${totalExaminers}</h3>
+                                </div>
+                                <div class="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-user-tie text-2xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="gradient-warning rounded-xl p-5 text-white card-hover transition-all duration-300">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-white/70 text-sm">Sudah Dinilai</p>
+                                    <h3 class="text-3xl font-bold">${totalScored}</h3>
+                                </div>
+                                <div class="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-check-circle text-2xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="gradient-info rounded-xl p-5 text-white card-hover transition-all duration-300">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-white/70 text-sm">Rata-rata Nilai</p>
+                                    <h3 class="text-3xl font-bold">${avgScore}</h3>
+                                </div>
+                                <div class="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-chart-line text-2xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="gradient-dark rounded-xl p-5 text-white card-hover transition-all duration-300">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-white/70 text-sm">Berita Acara</p>
+                                    <h3 class="text-3xl font-bold">${totalBeritaAcara}</h3>
+                                </div>
+                                <div class="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-file-signature text-2xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Aspek Penilaian -->
+                    <div class="bg-white rounded-xl shadow-lg p-5 mb-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-clipboard-list text-indigo-600 mr-2"></i>
+                            Aspek Penilaian Ujian Meja Makalah (Kurikulum Deep Learning)
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            ${appData.assessmentAspects.map(aspect => `
+                                <div class="border border-gray-200 rounded-lg p-4 hover:border-indigo-300 transition">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <h4 class="font-medium text-gray-800">${aspect.name}</h4>
+                                        <span class="bg-indigo-100 text-indigo-700 px-2 py-1 rounded text-xs font-medium">${aspect.weight}%</span>
+                                    </div>
+                                    <p class="text-gray-500 text-sm">${aspect.description}</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <!-- Recent Scores -->
+                    <div class="bg-white rounded-xl shadow-lg p-5">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-history text-indigo-600 mr-2"></i>
+                            Penilaian Terbaru
+                        </h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="border-b border-gray-200">
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Siswa</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Penguji</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Total Nilai</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Tanggal</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${appData.scores.slice(-5).reverse().map(score => {
+                                        const student = appData.students.find(s => s.id === score.studentId);
+                                        const examiner = appData.users.find(u => u.id === score.examinerId);
+                                        return `
+                                            <tr class="border-b border-gray-100 table-row-hover">
+                                                <td class="py-3 px-4 text-sm">${student?.name || '-'}</td>
+                                                <td class="py-3 px-4 text-sm">${examiner?.name || '-'}</td>
+                                                <td class="py-3 px-4">
+                                                    <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-sm font-medium">${score.totalScore.toFixed(1)}</span>
+                                                </td>
+                                                <td class="py-3 px-4 text-sm text-gray-500">${new Date(score.date).toLocaleDateString('id-ID')}</td>
+                                            </tr>
+                                        `;
+                                    }).join('') || '<tr><td colspan="4" class="text-center py-8 text-gray-400">Belum ada penilaian</td></tr>'}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ==================== PENGUJI PAGE ====================
+        function renderPenguji() {
+            const examiners = appData.users.filter(u => u.role === 'penguji');
+            
+            document.getElementById('contentArea').innerHTML = `
+                <div class="animate-fade-in">
+                    <div class="bg-white rounded-xl shadow-lg p-5 mb-6">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                            <h3 class="text-lg font-semibold text-gray-800 flex items-center">
+                                <i class="fas fa-user-tie text-indigo-600 mr-2"></i>
+                                Daftar Penguji
+                            </h3>
+                            <div class="flex flex-wrap gap-2">
+                                <button onclick="showAddPengujiModal()" class="gradient-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition flex items-center">
+                                    <i class="fas fa-plus mr-2"></i>Tambah Penguji
+                                </button>
+                                <label class="gradient-success text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition flex items-center cursor-pointer">
+                                    <i class="fas fa-file-excel mr-2"></i>Import Excel
+                                    <input type="file" accept=".xlsx,.xls" onchange="importPengujiExcel(event)" class="hidden">
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="border-b border-gray-200 bg-gray-50">
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">No</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Nama</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Username</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Password</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${examiners.map((ex, i) => `
+                                        <tr class="border-b border-gray-100 table-row-hover">
+                                            <td class="py-3 px-4 text-sm">${i + 1}</td>
+                                            <td class="py-3 px-4 text-sm font-medium">${ex.name}</td>
+                                            <td class="py-3 px-4 text-sm">${ex.username}</td>
+                                            <td class="py-3 px-4 text-sm">••••••</td>
+                                            <td class="py-3 px-4">
+                                                <button onclick="editPenguji(${ex.id})" class="text-blue-600 hover:text-blue-800 mr-2">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button onclick="deletePenguji(${ex.id})" class="text-red-600 hover:text-red-800">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    `).join('') || '<tr><td colspan="5" class="text-center py-8 text-gray-400">Belum ada data penguji</td></tr>'}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showAddPengujiModal() {
+            showModal('Tambah Penguji', `
+                <form onsubmit="savePenguji(event)">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Nama Penguji</label>
+                            <input type="text" id="pengujiName" class="w-full px-4 py-2 border rounded-lg input-focus" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                            <input type="text" id="pengujiUsername" class="w-full px-4 py-2 border rounded-lg input-focus" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                            <input type="password" id="pengujiPassword" class="w-full px-4 py-2 border rounded-lg input-focus" required>
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-2 mt-6">
+                        <button type="button" onclick="closeModal()" class="px-4 py-2 border rounded-lg hover:bg-gray-50">Batal</button>
+                        <button type="submit" class="px-4 py-2 gradient-primary text-white rounded-lg">Simpan</button>
+                    </div>
+                </form>
+            `);
+        }
+
+        function savePenguji(e) {
+            e.preventDefault();
+            const newPenguji = {
+                id: Date.now(),
+                name: document.getElementById('pengujiName').value,
+                username: document.getElementById('pengujiUsername').value,
+                password: document.getElementById('pengujiPassword').value,
+                role: 'penguji'
+            };
+            appData.users.push(newPenguji);
+            saveData();
+            closeModal();
+            renderPenguji();
+            showToast('Penguji berhasil ditambahkan!');
+        }
+
+        function deletePenguji(id) {
+            if (confirm('Yakin ingin menghapus penguji ini?')) {
+                appData.users = appData.users.filter(u => u.id !== id);
+                saveData();
+                renderPenguji();
+                showToast('Penguji berhasil dihapus!', 'warning');
+            }
+        }
+
+        function importPengujiExcel(e) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const json = XLSX.utils.sheet_to_json(sheet);
+                
+                json.forEach(row => {
+                    appData.users.push({
+                        id: Date.now() + Math.random(),
+                        name: row.Nama || row.nama,
+                        username: row.Username || row.username,
+                        password: row.Password || row.password || 'penguji123',
+                        role: 'penguji'
+                    });
+                });
+                saveData();
+                renderPenguji();
+                showToast(`${json.length} penguji berhasil diimport!`);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // ==================== SISWA PAGE ====================
+        function renderSiswa() {
+            document.getElementById('contentArea').innerHTML = `
+                <div class="animate-fade-in">
+                    <div class="bg-white rounded-xl shadow-lg p-5">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                            <h3 class="text-lg font-semibold text-gray-800 flex items-center">
+                                <i class="fas fa-users text-indigo-600 mr-2"></i>
+                                Daftar Siswa
+                            </h3>
+                            <div class="flex flex-wrap gap-2">
+                                <button onclick="showAddSiswaModal()" class="gradient-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition flex items-center">
+                                    <i class="fas fa-plus mr-2"></i>Tambah Siswa
+                                </button>
+                                <label class="gradient-success text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition flex items-center cursor-pointer">
+                                    <i class="fas fa-file-excel mr-2"></i>Import Excel
+                                    <input type="file" accept=".xlsx,.xls" onchange="importSiswaExcel(event)" class="hidden">
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="border-b border-gray-200 bg-gray-50">
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">No</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">NIS</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Nama Siswa</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Kelas</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Judul Makalah</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${appData.students.map((s, i) => `
+                                        <tr class="border-b border-gray-100 table-row-hover">
+                                            <td class="py-3 px-4 text-sm">${i + 1}</td>
+                                            <td class="py-3 px-4 text-sm">${s.nis}</td>
+                                            <td class="py-3 px-4 text-sm font-medium">${s.name}</td>
+                                            <td class="py-3 px-4 text-sm">${s.kelas}</td>
+                                            <td class="py-3 px-4 text-sm max-w-xs truncate">${s.judulMakalah || '-'}</td>
+                                            <td class="py-3 px-4">
+                                                <button onclick="editSiswa(${s.id})" class="text-blue-600 hover:text-blue-800 mr-2">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button onclick="deleteSiswa(${s.id})" class="text-red-600 hover:text-red-800">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    `).join('') || '<tr><td colspan="6" class="text-center py-8 text-gray-400">Belum ada data siswa</td></tr>'}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showAddSiswaModal() {
+            showModal('Tambah Siswa', `
+                <form onsubmit="saveSiswa(event)">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">NIS</label>
+                            <input type="text" id="siswanis" class="w-full px-4 py-2 border rounded-lg input-focus" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Nama Siswa</label>
+                            <input type="text" id="siswaName" class="w-full px-4 py-2 border rounded-lg input-focus" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Kelas</label>
+                            <input type="text" id="siswaKelas" class="w-full px-4 py-2 border rounded-lg input-focus" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Judul Makalah</label>
+                            <textarea id="siswaJudul" class="w-full px-4 py-2 border rounded-lg input-focus" rows="2"></textarea>
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-2 mt-6">
+                        <button type="button" onclick="closeModal()" class="px-4 py-2 border rounded-lg hover:bg-gray-50">Batal</button>
+                        <button type="submit" class="px-4 py-2 gradient-primary text-white rounded-lg">Simpan</button>
+                    </div>
+                </form>
+            `);
+        }
+
+        function saveSiswa(e) {
+            e.preventDefault();
+            const newSiswa = {
+                id: Date.now(),
+                nis: document.getElementById('siswanis').value,
+                name: document.getElementById('siswaName').value,
+                kelas: document.getElementById('siswaKelas').value,
+                judulMakalah: document.getElementById('siswaJudul').value
+            };
+            appData.students.push(newSiswa);
+            saveData();
+            closeModal();
+            renderSiswa();
+            showToast('Siswa berhasil ditambahkan!');
+        }
+
+        function deleteSiswa(id) {
+            if (confirm('Yakin ingin menghapus siswa ini?')) {
+                appData.students = appData.students.filter(s => s.id !== id);
+                saveData();
+                renderSiswa();
+                showToast('Siswa berhasil dihapus!', 'warning');
+            }
+        }
+
+        function importSiswaExcel(e) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const json = XLSX.utils.sheet_to_json(sheet);
+                
+                json.forEach(row => {
+                    appData.students.push({
+                        id: Date.now() + Math.random(),
+                        nis: row.NIS || row.nis || '',
+                        name: row.Nama || row.nama || row.Name,
+                        kelas: row.Kelas || row.kelas || '',
+                        judulMakalah: row.Judul || row.judul || row['Judul Makalah'] || ''
+                    });
+                });
+                saveData();
+                renderSiswa();
+                showToast(`${json.length} siswa berhasil diimport!`);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // ==================== PENILAIAN PAGE ====================
+        function renderPenilaian() {
+            document.getElementById('contentArea').innerHTML = `
+                <div class="animate-fade-in">
+                    <div class="bg-white rounded-xl shadow-lg p-5 mb-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-clipboard-check text-indigo-600 mr-2"></i>
+                            Form Penilaian Ujian Meja Makalah
+                        </h3>
+                        
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Pilih Siswa</label>
+                            <select id="selectStudent" onchange="loadStudentForScoring()" class="w-full px-4 py-3 border rounded-lg input-focus bg-white">
+                                <option value="">-- Pilih Siswa --</option>
+                                ${appData.students.map(s => `<option value="${s.id}">${s.name} (${s.kelas})</option>`).join('')}
+                            </select>
+                        </div>
+
+                        <div id="scoringForm" class="hidden">
+                            <div class="bg-indigo-50 rounded-lg p-4 mb-6">
+                                <h4 class="font-medium text-indigo-800" id="selectedStudentName"></h4>
+                                <p class="text-sm text-indigo-600" id="selectedStudentInfo"></p>
+                            </div>
+
+                            <form onsubmit="submitScore(event)">
+                                <div class="space-y-4 mb-6">
+                                    ${appData.assessmentAspects.map(aspect => `
+                                        <div class="border rounded-lg p-4">
+                                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+                                                <div>
+                                                    <h4 class="font-medium text-gray-800">${aspect.name}</h4>
+                                                    <p class="text-xs text-gray-500">${aspect.description} (Bobot: ${aspect.weight}%)</p>
+                                                </div>
+                                                <div class="flex items-center gap-2">
+                                                    <input type="number" id="score_${aspect.id}" min="0" max="100" required
+                                                        class="w-20 px-3 py-2 border rounded-lg input-focus text-center font-medium"
+                                                        placeholder="0-100">
+                                                    <span class="text-gray-500 text-sm">/100</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+
+                                <div class="flex flex-col sm:flex-row gap-4">
+                                    <button type="submit" class="flex-1 gradient-primary text-white py-3 rounded-lg font-medium hover:opacity-90 transition">
+                                        <i class="fas fa-save mr-2"></i>Simpan Penilaian
+                                    </button>
+                                    <button type="button" onclick="resetForm()" class="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                                        <i class="fas fa-redo mr-2"></i>Reset
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function loadStudentForScoring() {
+            const studentId = parseInt(document.getElementById('selectStudent').value);
+            const scoringForm = document.getElementById('scoringForm');
+            
+            if (studentId) {
+                const student = appData.students.find(s => s.id === studentId);
+                document.getElementById('selectedStudentName').textContent = student.name;
+                document.getElementById('selectedStudentInfo').textContent = `NIS: ${student.nis} | Kelas: ${student.kelas} | Judul: ${student.judulMakalah || '-'}`;
+                scoringForm.classList.remove('hidden');
+                
+                // Check if already scored
+                const existingScore = appData.scores.find(s => s.studentId === studentId && s.examinerId === currentUser.id);
+                if (existingScore) {
+                    appData.assessmentAspects.forEach(aspect => {
+                        const scoreInput = document.getElementById(`score_${aspect.id}`);
+                        if (scoreInput && existingScore.details) {
+                            const detail = existingScore.details.find(d => d.aspectId === aspect.id);
+                            if (detail) scoreInput.value = detail.score;
+                        }
+                    });
+                }
+            } else {
+                scoringForm.classList.add('hidden');
+            }
+        }
+
+        function submitScore(e) {
+            e.preventDefault();
+            const studentId = parseInt(document.getElementById('selectStudent').value);
+            
+            let details = [];
+            let totalWeightedScore = 0;
+            
+            appData.assessmentAspects.forEach(aspect => {
+                const score = parseInt(document.getElementById(`score_${aspect.id}`).value);
+                details.push({ aspectId: aspect.id, score: score });
+                totalWeightedScore += (score * aspect.weight / 100);
+            });
+
+            // Remove existing score if any
+            appData.scores = appData.scores.filter(s => !(s.studentId === studentId && s.examinerId === currentUser.id));
+            
+            appData.scores.push({
+                id: Date.now(),
+                studentId: studentId,
+                examinerId: currentUser.id,
+                details: details,
+                totalScore: totalWeightedScore,
+                date: new Date().toISOString()
+            });
+
+            saveData();
+            showToast('Penilaian berhasil disimpan!');
+            document.getElementById('selectStudent').value = '';
+            document.getElementById('scoringForm').classList.add('hidden');
+        }
+
+        function resetForm() {
+            appData.assessmentAspects.forEach(aspect => {
+                document.getElementById(`score_${aspect.id}`).value = '';
+            });
+        }
+
+        // ==================== REKAP PAGE ====================
+        function renderRekap() {
+            const rekapData = [];
+            
+            appData.students.forEach(student => {
+                const studentScores = appData.scores.filter(s => s.studentId === student.id);
+                const avgScore = studentScores.length > 0
+                    ? studentScores.reduce((a, b) => a + b.totalScore, 0) / studentScores.length
+                    : null;
+                
+                rekapData.push({
+                    student: student,
+                    scores: studentScores,
+                    avgScore: avgScore
+                });
+            });
+
+            document.getElementById('contentArea').innerHTML = `
+                <div class="animate-fade-in">
+                    <div class="bg-white rounded-xl shadow-lg p-5">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                            <h3 class="text-lg font-semibold text-gray-800 flex items-center">
+                                <i class="fas fa-chart-bar text-indigo-600 mr-2"></i>
+                                Rekap Nilai Ujian Meja Makalah
+                            </h3>
+                            <button onclick="printRekapPDF()" class="gradient-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition flex items-center">
+                                <i class="fas fa-file-pdf mr-2"></i>Cetak PDF
+                            </button>
+                        </div>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="w-full" id="rekapTable">
+                                <thead>
+                                    <tr class="border-b border-gray-200 bg-gray-50">
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">No</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">NIS</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Nama Siswa</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Kelas</th>
+                                        ${appData.users.filter(u => u.role === 'penguji').map(p => `
+                                            <th class="text-center py-3 px-4 text-sm font-semibold text-gray-600">${p.name}</th>
+                                        `).join('')}
+                                        <th class="text-center py-3 px-4 text-sm font-semibold text-gray-600">Rata-rata</th>
+                                        <th class="text-center py-3 px-4 text-sm font-semibold text-gray-600">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${rekapData.map((r, i) => {
+                                        const pengujiScores = appData.users.filter(u => u.role === 'penguji').map(p => {
+                                            const score = r.scores.find(s => s.examinerId === p.id);
+                                            return score ? score.totalScore.toFixed(1) : '-';
+                                        });
+                                        
+                                        return `
+                                            <tr class="border-b border-gray-100 table-row-hover">
+                                                <td class="py-3 px-4 text-sm">${i + 1}</td>
+                                                <td class="py-3 px-4 text-sm">${r.student.nis}</td>
+                                                <td class="py-3 px-4 text-sm font-medium">${r.student.name}</td>
+                                                <td class="py-3 px-4 text-sm">${r.student.kelas}</td>
+                                                ${pengujiScores.map(ps => `<td class="py-3 px-4 text-sm text-center">${ps}</td>`).join('')}
+                                                <td class="py-3 px-4 text-center">
+                                                    ${r.avgScore !== null 
+                                                        ? `<span class="bg-green-100 text-green-700 px-2 py-1 rounded font-medium">${r.avgScore.toFixed(1)}</span>`
+                                                        : '<span class="text-gray-400">-</span>'}
+                                                </td>
+                                                <td class="py-3 px-4 text-center">
+                                                    <button onclick="printStudentPDF(${r.student.id})" class="text-indigo-600 hover:text-indigo-800" title="Cetak PDF Siswa">
+                                                        <i class="fas fa-print"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        `;
+                                    }).join('') || '<tr><td colspan="7" class="text-center py-8 text-gray-400">Belum ada data</td></tr>'}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ==================== BERITA ACARA PAGE (PENGUJI) ====================
+        function renderBeritaAcara() {
+            const today = new Date().toISOString().split('T')[0];
+            const examiners = appData.users.filter(u => u.role === 'penguji');
+            
+            document.getElementById('contentArea').innerHTML = `
+                <div class="animate-fade-in">
+                    <div class="bg-white rounded-xl shadow-lg p-5 mb-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-file-signature text-indigo-600 mr-2"></i>
+                            Buat Berita Acara Ujian Meja Makalah
+                        </h3>
+                        
+                        <form onsubmit="saveBeritaAcara(event)" class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Nomor Berita Acara</label>
+                                    <input type="text" id="baNumber" class="w-full px-4 py-2 border rounded-lg input-focus" placeholder="Contoh: 001/BA-UMM/2024" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Pelaksanaan</label>
+                                    <input type="date" id="baDate" class="w-full px-4 py-2 border rounded-lg input-focus" value="${today}" required>
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Waktu Mulai</label>
+                                    <input type="time" id="baTimeStart" class="w-full px-4 py-2 border rounded-lg input-focus" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Waktu Selesai</label>
+                                    <input type="time" id="baTimeEnd" class="w-full px-4 py-2 border rounded-lg input-focus" required>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Tempat Pelaksanaan</label>
+                                <input type="text" id="baPlace" class="w-full px-4 py-2 border rounded-lg input-focus" placeholder="Contoh: Ruang Aula SMP Negeri 1 Nagawutung" required>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Jumlah Peserta Ujian</label>
+                                <input type="number" id="baParticipants" class="w-full px-4 py-2 border rounded-lg input-focus" value="${appData.students.length}" required>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Catatan / Keterangan</label>
+                                <textarea id="baNotes" class="w-full px-4 py-2 border rounded-lg input-focus" rows="3" placeholder="Tuliskan catatan penting selama pelaksanaan ujian..."></textarea>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Kendala / Permasalahan</label>
+                                <textarea id="baProblems" class="w-full px-4 py-2 border rounded-lg input-focus" rows="3" placeholder="Tuliskan kendala atau permasalahan yang terjadi (jika ada)..."></textarea>
+                            </div>
+                            
+                            <div class="flex flex-col sm:flex-row gap-4 pt-4">
+                                <button type="submit" class="flex-1 gradient-primary text-white py-3 rounded-lg font-medium hover:opacity-90 transition">
+                                    <i class="fas fa-save mr-2"></i>Simpan Berita Acara
+                                </button>
+                                <button type="button" onclick="previewBeritaAcaraPDF()" class="px-6 py-3 border border-indigo-500 text-indigo-600 rounded-lg hover:bg-indigo-50 transition">
+                                    <i class="fas fa-eye mr-2"></i>Preview PDF
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- Daftar Berita Acara -->
+                    <div class="bg-white rounded-xl shadow-lg p-5">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-list text-indigo-600 mr-2"></i>
+                            Daftar Berita Acara
+                        </h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="border-b border-gray-200 bg-gray-50">
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">No</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Nomor BA</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Tanggal</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Tempat</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Peserta</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${appData.beritaAcara.map((ba, i) => `
+                                        <tr class="border-b border-gray-100 table-row-hover">
+                                            <td class="py-3 px-4 text-sm">${i + 1}</td>
+                                            <td class="py-3 px-4 text-sm font-medium">${ba.number}</td>
+                                            <td class="py-3 px-4 text-sm">${new Date(ba.date).toLocaleDateString('id-ID')}</td>
+                                            <td class="py-3 px-4 text-sm">${ba.place}</td>
+                                            <td class="py-3 px-4 text-sm">${ba.participants} siswa</td>
+                                            <td class="py-3 px-4">
+                                                <button onclick="printBeritaAcaraPDF(${ba.id})" class="text-indigo-600 hover:text-indigo-800 mr-2" title="Cetak PDF">
+                                                    <i class="fas fa-print"></i>
+                                                </button>
+                                                <button onclick="deleteBeritaAcara(${ba.id})" class="text-red-600 hover:text-red-800" title="Hapus">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    `).join('') || '<tr><td colspan="6" class="text-center py-8 text-gray-400">Belum ada berita acara</td></tr>'}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function saveBeritaAcara(e) {
+            e.preventDefault();
+            
+            const newBA = {
+                id: Date.now(),
+                number: document.getElementById('baNumber').value,
+                date: document.getElementById('baDate').value,
+                timeStart: document.getElementById('baTimeStart').value,
+                timeEnd: document.getElementById('baTimeEnd').value,
+                place: document.getElementById('baPlace').value,
+                participants: parseInt(document.getElementById('baParticipants').value),
+                notes: document.getElementById('baNotes').value,
+                problems: document.getElementById('baProblems').value,
+                createdBy: currentUser.id,
+                createdAt: new Date().toISOString()
+            };
+            
+            appData.beritaAcara.push(newBA);
+            saveData();
+            showToast('Berita Acara berhasil disimpan!');
+            renderBeritaAcara();
+        }
+
+        function deleteBeritaAcara(id) {
+            if (confirm('Yakin ingin menghapus berita acara ini?')) {
+                appData.beritaAcara = appData.beritaAcara.filter(ba => ba.id !== id);
+                saveData();
+                showToast('Berita Acara berhasil dihapus!', 'warning');
+                if (currentUser.role === 'admin') {
+                    renderBeritaAcaraAdmin();
+                } else {
+                    renderBeritaAcara();
+                }
+            }
+        }
+
+        function previewBeritaAcaraPDF() {
+            const baData = {
+                number: document.getElementById('baNumber').value || '-',
+                date: document.getElementById('baDate').value,
+                timeStart: document.getElementById('baTimeStart').value || '-',
+                timeEnd: document.getElementById('baTimeEnd').value || '-',
+                place: document.getElementById('baPlace').value || '-',
+                participants: document.getElementById('baParticipants').value || 0,
+                notes: document.getElementById('baNotes').value || '-',
+                problems: document.getElementById('baProblems').value || 'Tidak ada'
+            };
+            
+            generateBeritaAcaraPDF(baData);
+        }
+
+        function printBeritaAcaraPDF(id) {
+            const ba = appData.beritaAcara.find(b => b.id === id);
+            if (ba) {
+                generateBeritaAcaraPDF(ba);
+            }
+        }
+
+        function generateBeritaAcaraPDF(ba) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const pageWidth = doc.internal.pageSize.width;
+            
+            // Header
+            addPDFHeader(doc);
+            
+            // Title
+            doc.setFontSize(14);
+            doc.setFont(undefined, 'bold');
+            doc.text('BERITA ACARA', pageWidth / 2, 50, { align: 'center' });
+            doc.text('PELAKSANAAN UJIAN MEJA MAKALAH', pageWidth / 2, 57, { align: 'center' });
+            doc.text('BERBASIS KURIKULUM DEEP LEARNING', pageWidth / 2, 64, { align: 'center' });
+            
+            doc.setFontSize(11);
+            doc.text(`Nomor: ${ba.number}`, pageWidth / 2, 74, { align: 'center' });
+            
+            // Content
+            doc.setFontSize(11);
+            doc.setFont(undefined, 'normal');
+            
+            let y = 90;
+            const leftMargin = 20;
+            const lineHeight = 7;
+            
+            const dateFormatted = new Date(ba.date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            
+            doc.text('Pada hari ini, ' + dateFormatted + ', telah dilaksanakan Ujian Meja Makalah', leftMargin, y);
+            y += lineHeight;
+            doc.text('Berbasis Kurikulum Deep Learning dengan keterangan sebagai berikut:', leftMargin, y);
+            y += lineHeight * 2;
+            
+            // Details table
+            const details = [
+                ['Hari/Tanggal', dateFormatted],
+                ['Waktu', `${ba.timeStart} - ${ba.timeEnd} WITA`],
+                ['Tempat', ba.place],
+                ['Jumlah Peserta', `${ba.participants} siswa`]
+            ];
+            
+            details.forEach(([label, value]) => {
+                doc.setFont(undefined, 'bold');
+                doc.text(label, leftMargin, y);
+                doc.setFont(undefined, 'normal');
+                doc.text(': ' + value, leftMargin + 45, y);
+                y += lineHeight;
+            });
+            
+            y += lineHeight;
+            
+            // Notes
+            doc.setFont(undefined, 'bold');
+            doc.text('Catatan Pelaksanaan:', leftMargin, y);
+            y += lineHeight;
+            doc.setFont(undefined, 'normal');
+            const notesLines = doc.splitTextToSize(ba.notes || 'Tidak ada catatan khusus.', pageWidth - 40);
+            doc.text(notesLines, leftMargin, y);
+            y += notesLines.length * lineHeight + lineHeight;
+            
+            // Problems
+            doc.setFont(undefined, 'bold');
+            doc.text('Kendala/Permasalahan:', leftMargin, y);
+            y += lineHeight;
+            doc.setFont(undefined, 'normal');
+            const problemsLines = doc.splitTextToSize(ba.problems || 'Tidak ada kendala.', pageWidth - 40);
+            doc.text(problemsLines, leftMargin, y);
+            y += problemsLines.length * lineHeight + lineHeight;
+            
+            // Closing
+            doc.text('Demikian berita acara ini dibuat dengan sebenarnya untuk dapat dipergunakan', leftMargin, y);
+            y += lineHeight;
+            doc.text('sebagaimana mestinya.', leftMargin, y);
+            
+            // Signatures
+            addBeritaAcaraSignatures(doc);
+            
+            doc.save(`Berita_Acara_${ba.number.replace(/\//g, '-')}.pdf`);
+        }
+
+        function addBeritaAcaraSignatures(doc) {
+            const pageWidth = doc.internal.pageSize.width;
+            const pageHeight = doc.internal.pageSize.height;
+            const y = pageHeight - 70;
+            
+            const today = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+            
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+            
+            // Examiners
+            const examiners = appData.users.filter(u => u.role === 'penguji');
+            
+            doc.text('Penguji 1,', 25, y);
+            doc.text('Penguji 2,', 75, y);
+            
+            doc.text(examiners[0]?.name || '________________', 25, y + 30);
+            doc.text(examiners[1]?.name || '________________', 75, y + 30);
+            
+            // Principal
+            doc.text(`Nagawutung, ${today}`, pageWidth - 75, y - 10);
+            doc.text('Mengetahui,', pageWidth - 75, y);
+            doc.text('Kepala Sekolah', pageWidth - 75, y + 6);
+            doc.text(appData.settings.principalName || '________________', pageWidth - 75, y + 30);
+            if (appData.settings.principalNIP) {
+                doc.setFontSize(9);
+                doc.text(`NIP. ${appData.settings.principalNIP}`, pageWidth - 75, y + 35);
+            }
+        }
+
+        // ==================== BERITA ACARA ADMIN PAGE ====================
+        function renderBeritaAcaraAdmin() {
+            document.getElementById('contentArea').innerHTML = `
+                <div class="animate-fade-in">
+                    <div class="bg-white rounded-xl shadow-lg p-5">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                            <h3 class="text-lg font-semibold text-gray-800 flex items-center">
+                                <i class="fas fa-file-signature text-indigo-600 mr-2"></i>
+                                Daftar Berita Acara
+                            </h3>
+                            <button onclick="printAllBeritaAcaraPDF()" class="gradient-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition flex items-center">
+                                <i class="fas fa-file-pdf mr-2"></i>Cetak Semua PDF
+                            </button>
+                        </div>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="border-b border-gray-200 bg-gray-50">
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">No</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Nomor BA</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Tanggal</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Waktu</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Tempat</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Peserta</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Dibuat Oleh</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${appData.beritaAcara.map((ba, i) => {
+                                        const creator = appData.users.find(u => u.id === ba.createdBy);
+                                        return `
+                                            <tr class="border-b border-gray-100 table-row-hover">
+                                                <td class="py-3 px-4 text-sm">${i + 1}</td>
+                                                <td class="py-3 px-4 text-sm font-medium">${ba.number}</td>
+                                                <td class="py-3 px-4 text-sm">${new Date(ba.date).toLocaleDateString('id-ID')}</td>
+                                                <td class="py-3 px-4 text-sm">${ba.timeStart} - ${ba.timeEnd}</td>
+                                                <td class="py-3 px-4 text-sm">${ba.place}</td>
+                                                <td class="py-3 px-4 text-sm">${ba.participants} siswa</td>
+                                                <td class="py-3 px-4 text-sm">${creator?.name || '-'}</td>
+                                                <td class="py-3 px-4">
+                                                    <button onclick="viewBeritaAcaraDetail(${ba.id})" class="text-green-600 hover:text-green-800 mr-2" title="Lihat Detail">
+                                                        <i class="fas fa-eye"></i>
+                                                    </button>
+                                                    <button onclick="printBeritaAcaraPDF(${ba.id})" class="text-indigo-600 hover:text-indigo-800 mr-2" title="Cetak PDF">
+                                                        <i class="fas fa-print"></i>
+                                                    </button>
+                                                    <button onclick="deleteBeritaAcara(${ba.id})" class="text-red-600 hover:text-red-800" title="Hapus">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        `;
+                                    }).join('') || '<tr><td colspan="8" class="text-center py-8 text-gray-400">Belum ada berita acara</td></tr>'}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function viewBeritaAcaraDetail(id) {
+            const ba = appData.beritaAcara.find(b => b.id === id);
+            const creator = appData.users.find(u => u.id === ba.createdBy);
+            
+            if (ba) {
+                showModal('Detail Berita Acara', `
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-sm text-gray-500">Nomor BA</p>
+                                <p class="font-medium">${ba.number}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Tanggal</p>
+                                <p class="font-medium">${new Date(ba.date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Waktu</p>
+                                <p class="font-medium">${ba.timeStart} - ${ba.timeEnd} WITA</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Tempat</p>
+                                <p class="font-medium">${ba.place}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Jumlah Peserta</p>
+                                <p class="font-medium">${ba.participants} siswa</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Dibuat Oleh</p>
+                                <p class="font-medium">${creator?.name || '-'}</p>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Catatan</p>
+                            <p class="font-medium">${ba.notes || '-'}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Kendala/Permasalahan</p>
+                            <p class="font-medium">${ba.problems || 'Tidak ada'}</p>
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-2 mt-6">
+                        <button type="button" onclick="closeModal()" class="px-4 py-2 border rounded-lg hover:bg-gray-50">Tutup</button>
+                        <button type="button" onclick="closeModal(); printBeritaAcaraPDF(${ba.id});" class="px-4 py-2 gradient-primary text-white rounded-lg">
+                            <i class="fas fa-print mr-2"></i>Cetak PDF
+                        </button>
+                    </div>
+                `);
+            }
+        }
+
+        function printAllBeritaAcaraPDF() {
+            if (appData.beritaAcara.length === 0) {
+                showToast('Tidak ada berita acara untuk dicetak!', 'warning');
+                return;
+            }
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const pageWidth = doc.internal.pageSize.width;
+            
+            // Header
+            addPDFHeader(doc);
+            
+            // Title
+            doc.setFontSize(14);
+            doc.setFont(undefined, 'bold');
+            doc.text('DAFTAR BERITA ACARA', pageWidth / 2, 50, { align: 'center' });
+            doc.text('UJIAN MEJA MAKALAH BERBASIS KURIKULUM DEEP LEARNING', pageWidth / 2, 57, { align: 'center' });
+            
+            // Table
+            const headers = [['No', 'Nomor BA', 'Tanggal', 'Waktu', 'Tempat', 'Peserta']];
+            const data = appData.beritaAcara.map((ba, i) => [
+                i + 1,
+                ba.number,
+                new Date(ba.date).toLocaleDateString('id-ID'),
+                `${ba.timeStart} - ${ba.timeEnd}`,
+                ba.place,
+                `${ba.participants} siswa`
+            ]);
+            
+            doc.autoTable({
+                head: headers,
+                body: data,
+                startY: 65,
+                styles: { fontSize: 8, cellPadding: 2 },
+                headStyles: { fillColor: [102, 126, 234] }
+            });
+            
+            // Signatures
+            addPDFSignatures(doc);
+            
+            doc.save('Daftar_Berita_Acara.pdf');
+        }
+
+        // ==================== FORM PENILAIAN MANUAL PAGE ====================
+        function renderFormManual() {
+            const examiners = appData.users.filter(u => u.role === 'penguji');
+            
+            document.getElementById('contentArea').innerHTML = `
+                <div class="animate-fade-in">
+                    <div class="bg-white rounded-xl shadow-lg p-5 mb-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-clipboard-list text-indigo-600 mr-2"></i>
+                            Cetak Form Penilaian Manual (Offline)
+                        </h3>
+                        <p class="text-gray-600 text-sm mb-6">
+                            Form penilaian manual ini dapat dicetak dan diberikan kepada penguji untuk melakukan penilaian secara offline. 
+                            Setelah diisi, nilai dapat diinputkan kembali ke sistem oleh penguji.
+                        </p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                            <!-- Cetak Form Kosong untuk Semua Siswa -->
+                            <div class="border-2 border-dashed border-indigo-300 rounded-xl p-6 text-center hover:border-indigo-500 hover:bg-indigo-50 transition cursor-pointer" onclick="printAllManualForms()">
+                                <div class="w-16 h-16 mx-auto bg-indigo-100 rounded-full flex items-center justify-center mb-4">
+                                    <i class="fas fa-users text-indigo-600 text-2xl"></i>
+                                </div>
+                                <h4 class="font-semibold text-gray-800 mb-2">Form Semua Siswa</h4>
+                                <p class="text-sm text-gray-500 mb-4">Cetak form penilaian untuk semua siswa sekaligus</p>
+                                <span class="inline-block bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm">
+                                    <i class="fas fa-print mr-2"></i>Cetak PDF
+                                </span>
+                            </div>
+                            
+                            <!-- Cetak Form Per Siswa -->
+                            <div class="border-2 border-dashed border-green-300 rounded-xl p-6 text-center hover:border-green-500 hover:bg-green-50 transition cursor-pointer" onclick="showSelectStudentForManualForm()">
+                                <div class="w-16 h-16 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-4">
+                                    <i class="fas fa-user text-green-600 text-2xl"></i>
+                                </div>
+                                <h4 class="font-semibold text-gray-800 mb-2">Form Per Siswa</h4>
+                                <p class="text-sm text-gray-500 mb-4">Pilih dan cetak form untuk siswa tertentu</p>
+                                <span class="inline-block bg-green-600 text-white px-4 py-2 rounded-lg text-sm">
+                                    <i class="fas fa-print mr-2"></i>Pilih Siswa
+                                </span>
+                            </div>
+                            
+                            <!-- Cetak Form Kosong -->
+                            <div class="border-2 border-dashed border-orange-300 rounded-xl p-6 text-center hover:border-orange-500 hover:bg-orange-50 transition cursor-pointer" onclick="printBlankManualForm()">
+                                <div class="w-16 h-16 mx-auto bg-orange-100 rounded-full flex items-center justify-center mb-4">
+                                    <i class="fas fa-file-alt text-orange-600 text-2xl"></i>
+                                </div>
+                                <h4 class="font-semibold text-gray-800 mb-2">Form Kosong</h4>
+                                <p class="text-sm text-gray-500 mb-4">Cetak form kosong tanpa data siswa</p>
+                                <span class="inline-block bg-orange-600 text-white px-4 py-2 rounded-lg text-sm">
+                                    <i class="fas fa-print mr-2"></i>Cetak PDF
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Preview Form -->
+                    <div class="bg-white rounded-xl shadow-lg p-5 mb-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-eye text-indigo-600 mr-2"></i>
+                            Preview Form Penilaian Manual
+                        </h3>
+                        <div class="border rounded-lg p-6 bg-gray-50 overflow-x-auto">
+                            <div class="min-w-[600px]">
+                                <!-- KOP Preview -->
+                                <div class="flex items-center justify-center gap-4 mb-4">
+                                    ${appData.settings.ministryLogo ? `<img src="${appData.settings.ministryLogo}" class="w-12 h-12 object-contain">` : '<div class="w-12 h-12 bg-gray-200 rounded flex items-center justify-center"><i class="fas fa-landmark text-gray-400"></i></div>'}
+                                    <div class="text-center flex-1">
+                                        ${appData.settings.kopDinas.split('\n').map(line => `<p class="text-xs font-semibold">${line}</p>`).join('')}
+                                    </div>
+                                    ${appData.settings.schoolLogo ? `<img src="${appData.settings.schoolLogo}" class="w-12 h-12 object-contain">` : '<div class="w-12 h-12 bg-gray-200 rounded flex items-center justify-center"><i class="fas fa-school text-gray-400"></i></div>'}
+                                </div>
+                                <hr class="border-t-2 border-black mb-1">
+                                <hr class="border-t border-black mb-4">
+                                
+                                <h4 class="text-center font-bold text-sm mb-4">FORM PENILAIAN UJIAN MEJA MAKALAH<br>BERBASIS KURIKULUM DEEP LEARNING</h4>
+                                
+                                <!-- Data Siswa -->
+                                <div class="grid grid-cols-2 gap-2 text-xs mb-4">
+                                    <div class="flex">
+                                        <span class="w-24">Nama Siswa</span>
+                                        <span>: ________________________________</span>
+                                    </div>
+                                    <div class="flex">
+                                        <span class="w-24">Kelas</span>
+                                        <span>: ________________________________</span>
+                                    </div>
+                                    <div class="flex">
+                                        <span class="w-24">NIS</span>
+                                        <span>: ________________________________</span>
+                                    </div>
+                                    <div class="flex">
+                                        <span class="w-24">Tanggal Ujian</span>
+                                        <span>: ________________________________</span>
+                                    </div>
+                                    <div class="flex col-span-2">
+                                        <span class="w-24">Judul Makalah</span>
+                                        <span>: ________________________________</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Tabel Penilaian -->
+                                <table class="w-full text-xs border-collapse border border-gray-400 mb-4">
+                                    <thead>
+                                        <tr class="bg-gray-200">
+                                            <th class="border border-gray-400 p-2 w-8">No</th>
+                                            <th class="border border-gray-400 p-2">Aspek Penilaian</th>
+                                            <th class="border border-gray-400 p-2 w-16">Bobot</th>
+                                            <th class="border border-gray-400 p-2 w-20">Nilai (0-100)</th>
+                                            <th class="border border-gray-400 p-2 w-20">Nilai x Bobot</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${appData.assessmentAspects.map((aspect, i) => `
+                                            <tr>
+                                                <td class="border border-gray-400 p-2 text-center">${i + 1}</td>
+                                                <td class="border border-gray-400 p-2">
+                                                    <strong>${aspect.name}</strong><br>
+                                                    <span class="text-gray-500">${aspect.description}</span>
+                                                </td>
+                                                <td class="border border-gray-400 p-2 text-center">${aspect.weight}%</td>
+                                                <td class="border border-gray-400 p-2"></td>
+                                                <td class="border border-gray-400 p-2"></td>
+                                            </tr>
+                                        `).join('')}
+                                        <tr class="bg-gray-100 font-bold">
+                                            <td colspan="2" class="border border-gray-400 p-2 text-center">TOTAL</td>
+                                            <td class="border border-gray-400 p-2 text-center">100%</td>
+                                            <td class="border border-gray-400 p-2"></td>
+                                            <td class="border border-gray-400 p-2"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                
+                                <!-- Catatan -->
+                                <div class="mb-4">
+                                    <p class="text-xs font-semibold mb-1">Catatan Penguji:</p>
+                                    <div class="border border-gray-400 h-16 rounded"></div>
+                                </div>
+                                
+                                <!-- Tanda Tangan -->
+                                <div class="grid grid-cols-3 gap-4 text-xs text-center mt-6">
+                                    <div>
+                                        <p>Penguji 1,</p>
+                                        <div class="h-16"></div>
+                                        <p class="border-t border-gray-400 pt-1">${examiners[0]?.name || '(........................)'}</p>
+                                    </div>
+                                    <div>
+                                        <p>Penguji 2,</p>
+                                        <div class="h-16"></div>
+                                        <p class="border-t border-gray-400 pt-1">${examiners[1]?.name || '(........................)'}</p>
+                                    </div>
+                                    <div>
+                                        <p>Mengetahui,<br>Kepala Sekolah</p>
+                                        <div class="h-12"></div>
+                                        <p class="border-t border-gray-400 pt-1">${appData.settings.principalName || '(........................)'}</p>
+                                        ${appData.settings.principalNIP ? `<p class="text-[10px]">NIP. ${appData.settings.principalNIP}</p>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Daftar Siswa untuk Cetak -->
+                    <div class="bg-white rounded-xl shadow-lg p-5">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-list text-indigo-600 mr-2"></i>
+                            Daftar Siswa - Cetak Form Individual
+                        </h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="border-b border-gray-200 bg-gray-50">
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">No</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">NIS</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Nama Siswa</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Kelas</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Judul Makalah</th>
+                                        <th class="text-center py-3 px-4 text-sm font-semibold text-gray-600">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${appData.students.map((s, i) => `
+                                        <tr class="border-b border-gray-100 table-row-hover">
+                                            <td class="py-3 px-4 text-sm">${i + 1}</td>
+                                            <td class="py-3 px-4 text-sm">${s.nis}</td>
+                                            <td class="py-3 px-4 text-sm font-medium">${s.name}</td>
+                                            <td class="py-3 px-4 text-sm">${s.kelas}</td>
+                                            <td class="py-3 px-4 text-sm max-w-xs truncate">${s.judulMakalah || '-'}</td>
+                                            <td class="py-3 px-4 text-center">
+                                                <button onclick="printManualFormForStudent(${s.id})" class="gradient-primary text-white px-3 py-1 rounded text-sm hover:opacity-90 transition">
+                                                    <i class="fas fa-print mr-1"></i>Cetak
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    `).join('') || '<tr><td colspan="6" class="text-center py-8 text-gray-400">Belum ada data siswa</td></tr>'}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showSelectStudentForManualForm() {
+            showModal('Pilih Siswa', `
+                <div class="space-y-2 max-h-96 overflow-y-auto">
+                    ${appData.students.map(s => `
+                        <div onclick="closeModal(); printManualFormForStudent(${s.id});" class="p-3 border rounded-lg hover:bg-indigo-50 hover:border-indigo-300 cursor-pointer transition">
+                            <p class="font-medium">${s.name}</p>
+                            <p class="text-sm text-gray-500">NIS: ${s.nis} | Kelas: ${s.kelas}</p>
+                        </div>
+                    `).join('') || '<p class="text-center text-gray-400 py-4">Belum ada data siswa</p>'}
+                </div>
+                <div class="flex justify-end mt-4">
+                    <button onclick="closeModal()" class="px-4 py-2 border rounded-lg hover:bg-gray-50">Tutup</button>
+                </div>
+            `);
+        }
+
+        function printManualFormForStudent(studentId) {
+            const student = appData.students.find(s => s.id === studentId);
+            if (student) {
+                generateManualFormPDF([student]);
+            }
+        }
+
+        function printAllManualForms() {
+            if (appData.students.length === 0) {
+                showToast('Belum ada data siswa!', 'warning');
+                return;
+            }
+            generateManualFormPDF(appData.students);
+        }
+
+        function printBlankManualForm() {
+            generateManualFormPDF([{ id: 0, nis: '', name: '', kelas: '', judulMakalah: '' }], true);
+        }
+
+        function generateManualFormPDF(students, isBlank = false) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const pageWidth = doc.internal.pageSize.width;
+            const pageHeight = doc.internal.pageSize.height;
+            const examiners = appData.users.filter(u => u.role === 'penguji');
+            
+            students.forEach((student, index) => {
+                if (index > 0) {
+                    doc.addPage();
+                }
+                
+                // Header KOP
+                addPDFHeader(doc);
+                
+                // Title
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'bold');
+                doc.text('FORM PENILAIAN UJIAN MEJA MAKALAH', pageWidth / 2, 48, { align: 'center' });
+                doc.text('BERBASIS KURIKULUM DEEP LEARNING', pageWidth / 2, 54, { align: 'center' });
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'normal');
+                doc.text('(Untuk Penilaian Offline oleh Penguji)', pageWidth / 2, 60, { align: 'center' });
+                
+                // Student Info
+                let y = 70;
+                const leftMargin = 20;
+                doc.setFontSize(10);
+                
+                if (isBlank) {
+                    doc.text('Nama Siswa', leftMargin, y);
+                    doc.text(': ________________________________________', leftMargin + 35, y);
+                    doc.text('NIS', leftMargin + 115, y);
+                    doc.text(': _____________________', leftMargin + 125, y);
+                    y += 7;
+                    doc.text('Kelas', leftMargin, y);
+                    doc.text(': ________________________________________', leftMargin + 35, y);
+                    doc.text('Tanggal', leftMargin + 115, y);
+                    doc.text(': _____________________', leftMargin + 125, y);
+                    y += 7;
+                    doc.text('Judul Makalah', leftMargin, y);
+                    doc.text(': ________________________________________________________________________________', leftMargin + 35, y);
+                } else {
+                    doc.setFont(undefined, 'bold');
+                    doc.text('Nama Siswa', leftMargin, y);
+                    doc.setFont(undefined, 'normal');
+                    doc.text(`: ${student.name}`, leftMargin + 35, y);
+                    doc.setFont(undefined, 'bold');
+                    doc.text('NIS', leftMargin + 115, y);
+                    doc.setFont(undefined, 'normal');
+                    doc.text(`: ${student.nis}`, leftMargin + 125, y);
+                    y += 7;
+                    doc.setFont(undefined, 'bold');
+                    doc.text('Kelas', leftMargin, y);
+                    doc.setFont(undefined, 'normal');
+                    doc.text(`: ${student.kelas}`, leftMargin + 35, y);
+                    doc.setFont(undefined, 'bold');
+                    doc.text('Tanggal', leftMargin + 115, y);
+                    doc.setFont(undefined, 'normal');
+                    doc.text(': _____________________', leftMargin + 125, y);
+                    y += 7;
+                    doc.setFont(undefined, 'bold');
+                    doc.text('Judul Makalah', leftMargin, y);
+                    doc.setFont(undefined, 'normal');
+                    const judulLines = doc.splitTextToSize(`: ${student.judulMakalah || '-'}`, 140);
+                    doc.text(judulLines, leftMargin + 35, y);
+                }
+                
+                y += 12;
+                
+                // Instruction
+                doc.setFontSize(9);
+                doc.setFont(undefined, 'italic');
+                doc.text('Petunjuk: Berikan nilai 0-100 pada kolom "Nilai" untuk setiap aspek penilaian.', leftMargin, y);
+                y += 8;
+                
+                // Assessment Table
+                const tableHeaders = [['No', 'Aspek Penilaian', 'Bobot', 'Nilai\n(0-100)', 'Nilai x\nBobot']];
+                const tableData = appData.assessmentAspects.map((aspect, i) => [
+                    (i + 1).toString(),
+                    `${aspect.name}\n(${aspect.description})`,
+                    `${aspect.weight}%`,
+                    '',
+                    ''
+                ]);
+                tableData.push(['', 'TOTAL NILAI', '100%', '', '']);
+                
+                doc.autoTable({
+                    head: tableHeaders,
+                    body: tableData,
+                    startY: y,
+                    styles: { 
+                        fontSize: 9, 
+                        cellPadding: 3,
+                        lineColor: [0, 0, 0],
+                        lineWidth: 0.2
+                    },
+                    headStyles: { 
+                        fillColor: [102, 126, 234],
+                        textColor: [255, 255, 255],
+                        fontStyle: 'bold',
+                        halign: 'center'
+                    },
+                    columnStyles: {
+                        0: { halign: 'center', cellWidth: 12 },
+                        1: { cellWidth: 80 },
+                        2: { halign: 'center', cellWidth: 20 },
+                        3: { halign: 'center', cellWidth: 25 },
+                        4: { halign: 'center', cellWidth: 25 }
+                    },
+                    theme: 'grid'
+                });
+                
+                // Notes section
+                let finalY = doc.lastAutoTable.finalY + 8;
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'bold');
+                doc.text('Catatan Penguji:', leftMargin, finalY);
+                doc.setFont(undefined, 'normal');
+                
+                // Draw notes box
+                doc.setDrawColor(0);
+                doc.setLineWidth(0.2);
+                doc.rect(leftMargin, finalY + 2, pageWidth - 40, 20);
+                
+                // Signatures
+                const sigY = pageHeight - 55;
+                const today = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+                
+                doc.setFontSize(9);
+                
+                // Examiner 1
+                doc.text('Penguji 1,', 30, sigY);
+                doc.text('(                                        )', 25, sigY + 25);
+                if (examiners[0]) {
+                    doc.setFontSize(8);
+                    doc.text(examiners[0].name, 30, sigY + 30);
+                }
+                
+                // Examiner 2
+                doc.setFontSize(9);
+                doc.text('Penguji 2,', 85, sigY);
+                doc.text('(                                        )', 80, sigY + 25);
+                if (examiners[1]) {
+                    doc.setFontSize(8);
+                    doc.text(examiners[1].name, 85, sigY + 30);
+                }
+                
+                // Principal
+                doc.setFontSize(9);
+                doc.text(`Nagawutung, ${today}`, pageWidth - 65, sigY - 8);
+                doc.text('Mengetahui,', pageWidth - 65, sigY);
+                doc.text('Kepala Sekolah', pageWidth - 65, sigY + 5);
+                doc.text('(                                        )', pageWidth - 70, sigY + 25);
+                if (appData.settings.principalName) {
+                    doc.setFontSize(8);
+                    doc.text(appData.settings.principalName, pageWidth - 65, sigY + 30);
+                    if (appData.settings.principalNIP) {
+                        doc.setFontSize(7);
+                        doc.text(`NIP. ${appData.settings.principalNIP}`, pageWidth - 65, sigY + 34);
+                    }
+                }
+            });
+            
+            const fileName = isBlank ? 'Form_Penilaian_Manual_Kosong.pdf' : 
+                            students.length === 1 ? `Form_Penilaian_${students[0].name.replace(/\s+/g, '_')}.pdf` :
+                            'Form_Penilaian_Manual_Semua_Siswa.pdf';
+            
+            doc.save(fileName);
+            showToast(`Form penilaian berhasil dicetak! (${students.length} form)`);
+        }
+
+        // ==================== BACKUP & RESTORE PAGE ====================
+        let firebaseConnected = false;
+        
+        // Default Firebase Configuration
+        const defaultFirebaseConfig = {
+            apiKey: "AIzaSyCb83eRoliPOLCsXCe7Vekn-qJuUB4EFos",
+            authDomain: "the-jack-project2025.firebaseapp.com",
+            databaseURL: "https://the-jack-project2025-default-rtdb.firebaseio.com",
+            projectId: "the-jack-project2025",
+            storageBucket: "the-jack-project2025.firebasestorage.app",
+            messagingSenderId: "126000218840",
+            appId: "1:126000218840:web:c0c2a58f5bf568d8b8cdad",
+            measurementId: "G-NZVVN47GSS"
+        };
+        
+        let firebaseConfig = JSON.parse(localStorage.getItem('firebaseConfig')) || defaultFirebaseConfig;
+        
+        function renderBackupRestore() {
+            const lastBackup = localStorage.getItem('lastBackupDate') || 'Belum pernah backup';
+            const lastSync = localStorage.getItem('lastSyncDate') || 'Belum pernah sinkronisasi';
+            
+            document.getElementById('contentArea').innerHTML = `
+                <div class="animate-fade-in space-y-6">
+                    <!-- Info Card -->
+                    <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl p-6 text-white">
+                        <div class="flex items-start gap-4">
+                            <div class="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-cloud text-3xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold mb-2">Penyimpanan Data Permanen</h3>
+                                <p class="text-white/80 text-sm">
+                                    Sistem ini menyediakan 2 metode penyimpanan data permanen:<br>
+                                    <strong>1. Backup Lokal</strong> - Download file JSON untuk disimpan di komputer/flashdisk<br>
+                                    <strong>2. Sinkronisasi Cloud (Firebase)</strong> - Data tersimpan online dan bisa diakses dari browser manapun
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Backup Status -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-white rounded-xl shadow-lg p-5">
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-download text-green-600"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-gray-800">Backup Terakhir</h4>
+                                    <p class="text-sm text-gray-500">${lastBackup}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-xl shadow-lg p-5">
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="w-10 h-10 ${firebaseConnected ? 'bg-green-100' : 'bg-gray-100'} rounded-full flex items-center justify-center">
+                                    <i class="fas fa-sync ${firebaseConnected ? 'text-green-600' : 'text-gray-400'}"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-gray-800">Status Cloud</h4>
+                                    <p class="text-sm ${firebaseConnected ? 'text-green-600' : 'text-gray-500'}">
+                                        ${firebaseConnected ? 'Terhubung ke Firebase' : 'Tidak terhubung'}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Backup Lokal -->
+                    <div class="bg-white rounded-xl shadow-lg p-5">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-hdd text-indigo-600 mr-2"></i>
+                            Backup & Restore Lokal
+                        </h3>
+                        <p class="text-gray-600 text-sm mb-4">
+                            Download data sebagai file JSON dan simpan di komputer Anda. File ini bisa digunakan untuk restore data di browser lain atau jika data terhapus.
+                        </p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="border-2 border-dashed border-green-300 rounded-xl p-6 text-center hover:border-green-500 hover:bg-green-50 transition cursor-pointer" onclick="exportDataToJSON()">
+                                <div class="w-14 h-14 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-3">
+                                    <i class="fas fa-download text-green-600 text-xl"></i>
+                                </div>
+                                <h4 class="font-semibold text-gray-800 mb-1">Download Backup</h4>
+                                <p class="text-xs text-gray-500">Export semua data ke file JSON</p>
+                            </div>
+                            
+                            <label class="border-2 border-dashed border-blue-300 rounded-xl p-6 text-center hover:border-blue-500 hover:bg-blue-50 transition cursor-pointer">
+                                <div class="w-14 h-14 mx-auto bg-blue-100 rounded-full flex items-center justify-center mb-3">
+                                    <i class="fas fa-upload text-blue-600 text-xl"></i>
+                                </div>
+                                <h4 class="font-semibold text-gray-800 mb-1">Restore Data</h4>
+                                <p class="text-xs text-gray-500">Import data dari file JSON</p>
+                                <input type="file" accept=".json" onchange="importDataFromJSON(event)" class="hidden">
+                            </label>
+                            
+                            <div class="border-2 border-dashed border-red-300 rounded-xl p-6 text-center hover:border-red-500 hover:bg-red-50 transition cursor-pointer" onclick="resetAllData()">
+                                <div class="w-14 h-14 mx-auto bg-red-100 rounded-full flex items-center justify-center mb-3">
+                                    <i class="fas fa-trash-alt text-red-600 text-xl"></i>
+                                </div>
+                                <h4 class="font-semibold text-gray-800 mb-1">Reset Data</h4>
+                                <p class="text-xs text-gray-500">Hapus semua data (hati-hati!)</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Firebase Cloud Sync -->
+                    <div class="bg-white rounded-xl shadow-lg p-5">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-cloud text-indigo-600 mr-2"></i>
+                            Sinkronisasi Cloud (Firebase)
+                        </h3>
+                        <p class="text-gray-600 text-sm mb-4">
+                            Hubungkan ke Firebase untuk menyimpan data secara online. Data akan otomatis tersinkronisasi dan bisa diakses dari browser manapun.
+                        </p>
+                        
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                            <div class="flex gap-3">
+                                <i class="fas fa-check-circle text-green-600 mt-1 text-xl"></i>
+                                <div class="text-sm text-green-800">
+                                    <strong>🎉 Firebase Sudah Dikonfigurasi!</strong>
+                                    <p class="mt-1">Aplikasi ini sudah terhubung ke Firebase Cloud Database. Data Anda akan tersimpan secara online dan dapat diakses dari browser manapun.</p>
+                                    <ul class="list-disc ml-4 mt-2 space-y-1">
+                                        <li><strong>Project:</strong> the-jack-project2025</li>
+                                        <li><strong>Status:</strong> ${firebaseConnected ? '<span class="text-green-700 font-bold">✅ Terhubung</span>' : '<span class="text-yellow-700">⏳ Menghubungkan...</span>'}</li>
+                                        <li><strong>Auto Sync:</strong> ${firebaseConnected ? '<span class="text-green-700 font-bold">✅ Aktif (Otomatis)</span>' : '<span class="text-yellow-600">⏳ Menunggu koneksi...</span>'}</li>
+                                    </ul>
+                                    ${firebaseConnected ? '<p class="mt-2 text-green-700 font-medium">🔄 Data akan otomatis tersinkronisasi ke cloud setiap ada perubahan!</p>' : ''}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Firebase Configuration (JSON)</label>
+                                <textarea id="firebaseConfigInput" class="w-full px-4 py-3 border rounded-lg input-focus font-mono text-sm" rows="8">${JSON.stringify(firebaseConfig || defaultFirebaseConfig, null, 2)}</textarea>
+                                <p class="text-xs text-green-600 mt-1"><i class="fas fa-check-circle mr-1"></i>Konfigurasi Firebase sudah terisi otomatis</p>
+                            </div>
+                            
+                            <div class="flex flex-wrap gap-3">
+                                ${firebaseConnected ? `
+                                    <div class="flex items-center gap-2 bg-green-100 text-green-700 px-4 py-2 rounded-lg font-medium">
+                                        <i class="fas fa-check-circle"></i>
+                                        <span>Terhubung & Auto Sync Aktif</span>
+                                    </div>
+                                    <button onclick="syncToFirebase()" class="bg-green-500 text-white px-6 py-2 rounded-lg font-medium hover:bg-green-600 transition">
+                                        <i class="fas fa-cloud-upload-alt mr-2"></i>Upload ke Cloud
+                                    </button>
+                                    <button onclick="syncFromFirebase()" class="bg-blue-500 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-600 transition">
+                                        <i class="fas fa-cloud-download-alt mr-2"></i>Download dari Cloud
+                                    </button>
+                                ` : `
+                                    <button onclick="connectFirebase()" class="gradient-primary text-white px-6 py-2 rounded-lg font-medium hover:opacity-90 transition">
+                                        <i class="fas fa-plug mr-2"></i>Hubungkan Firebase
+                                    </button>
+                                `}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Data Statistics -->
+                    <div class="bg-white rounded-xl shadow-lg p-5">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-chart-pie text-indigo-600 mr-2"></i>
+                            Statistik Data Tersimpan
+                        </h3>
+                        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                            <div class="bg-indigo-50 rounded-lg p-4 text-center">
+                                <div class="text-2xl font-bold text-indigo-600">${appData.users.filter(u => u.role === 'penguji').length}</div>
+                                <div class="text-xs text-gray-600">Penguji</div>
+                            </div>
+                            <div class="bg-green-50 rounded-lg p-4 text-center">
+                                <div class="text-2xl font-bold text-green-600">${appData.students.length}</div>
+                                <div class="text-xs text-gray-600">Siswa</div>
+                            </div>
+                            <div class="bg-blue-50 rounded-lg p-4 text-center">
+                                <div class="text-2xl font-bold text-blue-600">${appData.scores.length}</div>
+                                <div class="text-xs text-gray-600">Penilaian</div>
+                            </div>
+                            <div class="bg-purple-50 rounded-lg p-4 text-center">
+                                <div class="text-2xl font-bold text-purple-600">${appData.beritaAcara.length}</div>
+                                <div class="text-xs text-gray-600">Berita Acara</div>
+                            </div>
+                            <div class="bg-orange-50 rounded-lg p-4 text-center">
+                                <div class="text-2xl font-bold text-orange-600">${(JSON.stringify(appData).length / 1024).toFixed(1)} KB</div>
+                                <div class="text-xs text-gray-600">Ukuran Data</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Export data to JSON file
+        function exportDataToJSON() {
+            const dataToExport = {
+                version: '1.0',
+                exportDate: new Date().toISOString(),
+                schoolName: 'SMP Negeri 1 Nagawutung',
+                data: appData
+            };
+            
+            const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `backup_ujian_meja_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            localStorage.setItem('lastBackupDate', new Date().toLocaleString('id-ID'));
+            showToast('Data berhasil di-export! Simpan file dengan aman.');
+            renderBackupRestore();
+        }
+
+        // Import data from JSON file
+        function importDataFromJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    
+                    if (imported.data && imported.data.users) {
+                        if (confirm(`Anda akan mengimport data dari backup tanggal ${new Date(imported.exportDate).toLocaleString('id-ID')}.\n\nData saat ini akan ditimpa. Lanjutkan?`)) {
+                            appData = imported.data;
+                            
+                            // Ensure all arrays exist
+                            if (!appData.beritaAcara) appData.beritaAcara = [];
+                            if (!appData.scores) appData.scores = [];
+                            if (!appData.students) appData.students = [];
+                            if (!appData.settings) appData.settings = defaultData.settings;
+                            
+                            saveData();
+                            showToast('Data berhasil di-import!');
+                            renderBackupRestore();
+                            updateSidebarLogo();
+                        }
+                    } else {
+                        showToast('File tidak valid! Pastikan file adalah backup yang benar.', 'error');
+                    }
+                } catch (err) {
+                    showToast('Gagal membaca file! Pastikan format JSON valid.', 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Reset all data
+        function resetAllData() {
+            if (confirm('PERINGATAN!\n\nSemua data akan dihapus permanen termasuk:\n- Data Penguji\n- Data Siswa\n- Semua Nilai\n- Berita Acara\n- Pengaturan\n\nPastikan Anda sudah backup data sebelumnya.\n\nLanjutkan reset?')) {
+                if (confirm('Konfirmasi sekali lagi: Hapus SEMUA data?')) {
+                    appData = JSON.parse(JSON.stringify(defaultData));
+                    saveData();
+                    showToast('Semua data telah direset!', 'warning');
+                    renderBackupRestore();
+                    updateSidebarLogo();
+                }
+            }
+        }
+
+        // Connect to Firebase
+        function connectFirebase() {
+            const configText = document.getElementById('firebaseConfigInput').value.trim();
+            
+            if (!configText) {
+                showToast('Masukkan konfigurasi Firebase!', 'warning');
+                return;
+            }
+            
+            try {
+                const config = JSON.parse(configText);
+                
+                if (!config.databaseURL) {
+                    // Try to construct databaseURL from projectId
+                    if (config.projectId) {
+                        config.databaseURL = `https://${config.projectId}-default-rtdb.firebaseio.com`;
+                    } else {
+                        showToast('databaseURL tidak ditemukan dalam konfigurasi!', 'error');
+                        return;
+                    }
+                }
+                
+                // Initialize Firebase
+                if (firebase.apps.length) {
+                    // Delete existing app and reinitialize
+                    firebase.app().delete().then(() => {
+                        firebase.initializeApp(config);
+                        testFirebaseConnection(config);
+                    });
+                } else {
+                    firebase.initializeApp(config);
+                    testFirebaseConnection(config);
+                }
+                
+            } catch (err) {
+                showToast('Konfigurasi JSON tidak valid! ' + err.message, 'error');
+            }
+        }
+        
+        function testFirebaseConnection(config) {
+            const testRef = firebase.database().ref('.info/connected');
+            testRef.on('value', (snapshot) => {
+                if (snapshot.val() === true) {
+                    firebaseConnected = true;
+                    firebaseConfig = config;
+                    localStorage.setItem('firebaseConfig', JSON.stringify(config));
+                    localStorage.setItem('autoSync', 'true');
+                    showToast('🎉 Berhasil terhubung ke Firebase! Auto Sync diaktifkan.');
+                    updateSyncStatus();
+                    renderBackupRestore();
+                    enableRealtimeSync();
+                    
+                    // Immediately sync data to cloud
+                    syncToFirebase();
+                } else {
+                    firebaseConnected = false;
+                    updateSyncStatus();
+                }
+            });
+        }
+
+        // Sync data to Firebase
+        function syncToFirebase() {
+            if (!firebaseConnected) {
+                showToast('Firebase tidak terhubung!', 'error');
+                return;
+            }
+            
+            const dataToSync = {
+                ...appData,
+                lastUpdated: new Date().toISOString(),
+                updatedBy: currentUser ? currentUser.name : 'System'
+            };
+            
+            firebase.database().ref('ujianMeja').set(dataToSync)
+                .then(() => {
+                    localStorage.setItem('lastSyncDate', new Date().toLocaleString('id-ID'));
+                    showToast('✅ Data berhasil diupload ke cloud!');
+                    if (document.getElementById('contentArea').innerHTML.includes('Backup')) {
+                        renderBackupRestore();
+                    }
+                })
+                .catch((error) => {
+                    if (error.message.includes('Permission denied')) {
+                        showToast('❌ Akses ditolak! Pastikan rules Firebase sudah diatur dengan benar.', 'error');
+                        showFirebaseRulesHelp();
+                    } else {
+                        showToast('Gagal upload: ' + error.message, 'error');
+                    }
+                });
+        }
+        
+        function showFirebaseRulesHelp() {
+            showModal('⚠️ Firebase Rules Perlu Diatur', `
+                <div class="space-y-4">
+                    <p class="text-gray-700">Untuk menggunakan Firebase Realtime Database, Anda perlu mengatur rules di Firebase Console:</p>
+                    
+                    <div class="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm">
+                        <p>{</p>
+                        <p class="ml-4">"rules": {</p>
+                        <p class="ml-8">".read": true,</p>
+                        <p class="ml-8">".write": true</p>
+                        <p class="ml-4">}</p>
+                        <p>}</p>
+                    </div>
+                    
+                    <div class="bg-blue-50 p-4 rounded-lg text-sm">
+                        <p class="font-semibold text-blue-800 mb-2">Langkah-langkah:</p>
+                        <ol class="list-decimal ml-4 text-blue-700 space-y-1">
+                            <li>Buka <a href="https://console.firebase.google.com/project/the-jack-project2025/database/the-jack-project2025-default-rtdb/rules" target="_blank" class="underline font-medium">Firebase Console → Realtime Database → Rules</a></li>
+                            <li>Ganti rules dengan kode di atas</li>
+                            <li>Klik "Publish"</li>
+                            <li>Kembali ke aplikasi dan coba lagi</li>
+                        </ol>
+                    </div>
+                </div>
+                <div class="flex justify-end mt-6">
+                    <button onclick="closeModal()" class="px-4 py-2 gradient-primary text-white rounded-lg">Mengerti</button>
+                </div>
+            `);
+        }
+
+        // Sync data from Firebase
+        function syncFromFirebase() {
+            if (!firebaseConnected) {
+                showToast('Firebase tidak terhubung!', 'error');
+                return;
+            }
+            
+            firebase.database().ref('ujianMeja').once('value')
+                .then((snapshot) => {
+                    const cloudData = snapshot.val();
+                    if (cloudData) {
+                        if (confirm(`Data cloud terakhir diupdate: ${new Date(cloudData.lastUpdated).toLocaleString('id-ID')} oleh ${cloudData.updatedBy}.\n\nDownload dan timpa data lokal?`)) {
+                            appData = cloudData;
+                            if (!appData.beritaAcara) appData.beritaAcara = [];
+                            saveData();
+                            localStorage.setItem('lastSyncDate', new Date().toLocaleString('id-ID'));
+                            showToast('Data berhasil didownload dari cloud!');
+                            renderBackupRestore();
+                            updateSidebarLogo();
+                        }
+                    } else {
+                        showToast('Tidak ada data di cloud.', 'warning');
+                    }
+                })
+                .catch((error) => {
+                    showToast('Gagal download: ' + error.message, 'error');
+                });
+        }
+
+        // Enable auto sync
+        function enableAutoSync() {
+            const currentState = localStorage.getItem('autoSync') === 'true';
+            localStorage.setItem('autoSync', (!currentState).toString());
+            
+            if (!currentState) {
+                enableRealtimeSync();
+                showToast('Auto Sync diaktifkan! Data akan otomatis tersinkronisasi.');
+            } else {
+                showToast('Auto Sync dinonaktifkan.', 'warning');
+            }
+            
+            renderBackupRestore();
+        }
+
+        // Enable realtime sync
+        function enableRealtimeSync() {
+            if (!firebaseConnected) return;
+            
+            // Listen for changes from cloud
+            firebase.database().ref('ujianMeja').on('value', (snapshot) => {
+                const cloudData = snapshot.val();
+                if (cloudData && cloudData.lastUpdated) {
+                    const localLastUpdated = appData.lastUpdated || '';
+                    if (cloudData.lastUpdated > localLastUpdated && cloudData.updatedBy !== currentUser.name) {
+                        appData = cloudData;
+                        if (!appData.beritaAcara) appData.beritaAcara = [];
+                        saveData();
+                        showToast('Data diperbarui dari cloud (oleh ' + cloudData.updatedBy + ')');
+                    }
+                }
+            });
+        }
+
+        // Update sync status indicator
+        function updateSyncStatus() {
+            const dot = document.getElementById('syncDot');
+            const text = document.getElementById('syncText');
+            const indicator = document.getElementById('syncStatusIndicator');
+            
+            if (!dot || !text || !indicator) return;
+            
+            if (firebaseConnected) {
+                // When connected, auto sync is always active
+                dot.className = 'w-2 h-2 rounded-full bg-green-500 animate-pulse';
+                text.textContent = '☁️ Cloud Sync';
+                indicator.className = 'flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-100 text-xs text-green-700 cursor-pointer hover:opacity-80 transition';
+            } else {
+                dot.className = 'w-2 h-2 rounded-full bg-yellow-500 animate-pulse';
+                text.textContent = '⏳ Connecting...';
+                indicator.className = 'flex items-center gap-2 px-3 py-1.5 rounded-full bg-yellow-100 text-xs text-yellow-700 cursor-pointer hover:opacity-80 transition';
+            }
+        }
+        
+        function showSyncInfo() {
+            const lastSync = localStorage.getItem('lastSyncDate') || 'Belum pernah';
+            const autoSyncEnabled = firebaseConnected; // Auto sync is always on when connected
+            
+            showModal('☁️ Status Sinkronisasi Cloud', `
+                <div class="space-y-4">
+                    <div class="flex items-center gap-3 p-4 rounded-lg ${firebaseConnected ? 'bg-green-50' : 'bg-yellow-50'}">
+                        <div class="w-12 h-12 rounded-full ${firebaseConnected ? 'bg-green-500' : 'bg-yellow-500'} flex items-center justify-center">
+                            <i class="fas ${firebaseConnected ? 'fa-cloud' : 'fa-cloud'} text-white text-xl"></i>
+                        </div>
+                        <div>
+                            <p class="font-semibold ${firebaseConnected ? 'text-green-800' : 'text-yellow-800'}">
+                                ${firebaseConnected ? '✅ Terhubung ke Cloud' : '⏳ Menghubungkan...'}
+                            </p>
+                            <p class="text-sm ${firebaseConnected ? 'text-green-600' : 'text-yellow-600'}">
+                                Project: the-jack-project2025
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <p class="text-xs text-gray-500">Auto Sync</p>
+                            <p class="font-semibold ${autoSyncEnabled ? 'text-green-600' : 'text-yellow-600'}">
+                                ${autoSyncEnabled ? '✅ Aktif (Otomatis)' : '⏳ Menunggu...'}
+                            </p>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <p class="text-xs text-gray-500">Sync Terakhir</p>
+                            <p class="font-semibold text-gray-800 text-sm">${lastSync}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="${firebaseConnected ? 'bg-green-50' : 'bg-blue-50'} p-4 rounded-lg">
+                        <p class="text-sm ${firebaseConnected ? 'text-green-800' : 'text-blue-800'}">
+                            <i class="fas ${firebaseConnected ? 'fa-check-circle' : 'fa-info-circle'} mr-1"></i>
+                            ${firebaseConnected 
+                                ? '🔄 Auto Sync aktif! Setiap perubahan data akan otomatis tersimpan ke cloud dan dapat diakses dari browser manapun.' 
+                                : 'Menunggu koneksi ke Firebase...'}
+                        </p>
+                    </div>
+                </div>
+                <div class="flex gap-2 justify-end mt-6">
+                    ${currentUser?.role === 'admin' ? `
+                        <button onclick="closeModal(); navigateTo('backupRestore');" class="px-4 py-2 border rounded-lg hover:bg-gray-50">
+                            <i class="fas fa-cog mr-1"></i>Pengaturan
+                        </button>
+                    ` : ''}
+                    <button onclick="closeModal()" class="px-4 py-2 gradient-primary text-white rounded-lg">Tutup</button>
+                </div>
+            `);
+        }
+
+        // Auto-connect Firebase on load
+        function autoConnectFirebase() {
+            const config = firebaseConfig || defaultFirebaseConfig;
+            
+            try {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(config);
+                }
+                
+                firebase.database().ref('.info/connected').on('value', (snapshot) => {
+                    if (snapshot.val() === true) {
+                        firebaseConnected = true;
+                        firebaseConfig = config;
+                        localStorage.setItem('firebaseConfig', JSON.stringify(config));
+                        
+                        // Always enable auto sync when Firebase is connected
+                        localStorage.setItem('autoSync', 'true');
+                        
+                        updateSyncStatus();
+                        enableRealtimeSync();
+                        
+                        // Auto sync from cloud on first load
+                        autoSyncFromCloud();
+                        
+                        console.log('✅ Firebase connected successfully!');
+                    } else {
+                        firebaseConnected = false;
+                        updateSyncStatus();
+                    }
+                });
+            } catch (err) {
+                console.log('Firebase auto-connect failed:', err);
+                firebaseConnected = false;
+                updateSyncStatus();
+            }
+        }
+        
+        // Auto sync from cloud on startup
+        function autoSyncFromCloud() {
+            if (!firebaseConnected) return;
+            
+            firebase.database().ref('ujianMeja').once('value')
+                .then((snapshot) => {
+                    const cloudData = snapshot.val();
+                    if (cloudData && cloudData.lastUpdated) {
+                        const localLastUpdated = appData.lastUpdated || '';
+                        
+                        // If cloud has newer data, use it
+                        if (cloudData.lastUpdated > localLastUpdated) {
+                            appData = cloudData;
+                            if (!appData.beritaAcara) appData.beritaAcara = [];
+                            localStorage.setItem('examSystemData', JSON.stringify(appData));
+                            console.log('📥 Data synced from cloud');
+                        }
+                    } else if (!cloudData && appData.students.length > 0) {
+                        // If cloud is empty but local has data, upload to cloud
+                        syncToFirebase();
+                        console.log('📤 Local data uploaded to cloud');
+                    }
+                })
+                .catch((error) => {
+                    console.log('Auto sync failed:', error);
+                });
+        }
+
+        // Override saveData to also sync to cloud
+        const originalSaveData = saveData;
+        saveData = function() {
+            localStorage.setItem('examSystemData', JSON.stringify(appData));
+            
+            // Auto sync to Firebase if connected and enabled
+            if (firebaseConnected && localStorage.getItem('autoSync') === 'true') {
+                const dataToSync = {
+                    ...appData,
+                    lastUpdated: new Date().toISOString(),
+                    updatedBy: currentUser ? currentUser.name : 'System'
+                };
+                
+                firebase.database().ref('ujianMeja').set(dataToSync).catch(err => {
+                    console.log('Auto sync failed:', err);
+                });
+            }
+        };
+
+        // ==================== PENGATURAN PAGE ====================
+        function renderPengaturan() {
+            document.getElementById('contentArea').innerHTML = `
+                <div class="animate-fade-in space-y-6">
+                    <!-- Logo Upload -->
+                    <div class="bg-white rounded-xl shadow-lg p-5">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-image text-indigo-600 mr-2"></i>
+                            Upload Logo
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                                <div id="schoolLogoPreview" class="mb-4">
+                                    ${appData.settings.schoolLogo 
+                                        ? `<img src="${appData.settings.schoolLogo}" class="w-24 h-24 mx-auto object-contain">`
+                                        : '<i class="fas fa-school text-6xl text-gray-300"></i>'}
+                                </div>
+                                <p class="text-sm text-gray-600 mb-3">Logo Sekolah</p>
+                                <label class="cursor-pointer gradient-primary text-white px-4 py-2 rounded-lg text-sm inline-block">
+                                    <i class="fas fa-upload mr-2"></i>Pilih File
+                                    <input type="file" accept="image/*" onchange="uploadLogo('school', event)" class="hidden">
+                                </label>
+                            </div>
+                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                                <div id="ministryLogoPreview" class="mb-4">
+                                    ${appData.settings.ministryLogo 
+                                        ? `<img src="${appData.settings.ministryLogo}" class="w-24 h-24 mx-auto object-contain">`
+                                        : '<i class="fas fa-landmark text-6xl text-gray-300"></i>'}
+                                </div>
+                                <p class="text-sm text-gray-600 mb-3">Logo Kementerian Pendidikan</p>
+                                <label class="cursor-pointer gradient-primary text-white px-4 py-2 rounded-lg text-sm inline-block">
+                                    <i class="fas fa-upload mr-2"></i>Pilih File
+                                    <input type="file" accept="image/*" onchange="uploadLogo('ministry', event)" class="hidden">
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- KOP & Principal -->
+                    <div class="bg-white rounded-xl shadow-lg p-5">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-file-alt text-indigo-600 mr-2"></i>
+                            KOP Dinas & Data Kepala Sekolah
+                        </h3>
+                        <form onsubmit="saveSettings(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">KOP Dinas Pendidikan</label>
+                                <textarea id="kopDinas" class="w-full px-4 py-2 border rounded-lg input-focus" rows="4">${appData.settings.kopDinas}</textarea>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Nama Kepala Sekolah</label>
+                                    <input type="text" id="principalName" class="w-full px-4 py-2 border rounded-lg input-focus" value="${appData.settings.principalName}">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">NIP Kepala Sekolah</label>
+                                    <input type="text" id="principalNIP" class="w-full px-4 py-2 border rounded-lg input-focus" value="${appData.settings.principalNIP}">
+                                </div>
+                            </div>
+                            <button type="submit" class="gradient-primary text-white px-6 py-2 rounded-lg font-medium hover:opacity-90 transition">
+                                <i class="fas fa-save mr-2"></i>Simpan Pengaturan
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Preview KOP -->
+                    <div class="bg-white rounded-xl shadow-lg p-5">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-eye text-indigo-600 mr-2"></i>
+                            Preview KOP Surat
+                        </h3>
+                        <div class="border rounded-lg p-6 bg-gray-50">
+                            <div class="flex items-center justify-center gap-4 mb-4">
+                                ${appData.settings.ministryLogo ? `<img src="${appData.settings.ministryLogo}" class="w-16 h-16 object-contain">` : ''}
+                                <div class="text-center">
+                                    ${appData.settings.kopDinas.split('\n').map(line => `<p class="text-sm font-semibold">${line}</p>`).join('')}
+                                </div>
+                                ${appData.settings.schoolLogo ? `<img src="${appData.settings.schoolLogo}" class="w-16 h-16 object-contain">` : ''}
+                            </div>
+                            <hr class="border-t-2 border-black mb-2">
+                            <hr class="border-t border-black">
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function uploadLogo(type, event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    if (type === 'school') {
+                        appData.settings.schoolLogo = e.target.result;
+                        document.getElementById('schoolLogoPreview').innerHTML = `<img src="${e.target.result}" class="w-24 h-24 mx-auto object-contain">`;
+                    } else {
+                        appData.settings.ministryLogo = e.target.result;
+                        document.getElementById('ministryLogoPreview').innerHTML = `<img src="${e.target.result}" class="w-24 h-24 mx-auto object-contain">`;
+                    }
+                    saveData();
+                    updateSidebarLogo();
+                    showToast('Logo berhasil diupload!');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function saveSettings(e) {
+            e.preventDefault();
+            appData.settings.kopDinas = document.getElementById('kopDinas').value;
+            appData.settings.principalName = document.getElementById('principalName').value;
+            appData.settings.principalNIP = document.getElementById('principalNIP').value;
+            saveData();
+            showToast('Pengaturan berhasil disimpan!');
+            renderPengaturan();
+        }
+
+        // ==================== PDF GENERATION ====================
+        function printRekapPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Header
+            addPDFHeader(doc);
+            
+            doc.setFontSize(14);
+            doc.setFont(undefined, 'bold');
+            doc.text('REKAP NILAI UJIAN MEJA MAKALAH', doc.internal.pageSize.width / 2, 55, { align: 'center' });
+            doc.text('BERBASIS KURIKULUM DEEP LEARNING', doc.internal.pageSize.width / 2, 62, { align: 'center' });
+            
+            // Table
+            const examiners = appData.users.filter(u => u.role === 'penguji');
+            const headers = [['No', 'NIS', 'Nama Siswa', 'Kelas', ...examiners.map(e => e.name), 'Rata-rata']];
+            
+            const data = appData.students.map((student, i) => {
+                const scores = examiners.map(ex => {
+                    const score = appData.scores.find(s => s.studentId === student.id && s.examinerId === ex.id);
+                    return score ? score.totalScore.toFixed(1) : '-';
+                });
+                const validScores = appData.scores.filter(s => s.studentId === student.id);
+                const avg = validScores.length > 0 
+                    ? (validScores.reduce((a, b) => a + b.totalScore, 0) / validScores.length).toFixed(1) 
+                    : '-';
+                return [i + 1, student.nis, student.name, student.kelas, ...scores, avg];
+            });
+
+            doc.autoTable({
+                head: headers,
+                body: data,
+                startY: 70,
+                styles: { fontSize: 8, cellPadding: 2 },
+                headStyles: { fillColor: [102, 126, 234] }
+            });
+
+            // Signatures
+            addPDFSignatures(doc);
+            
+            doc.save('Rekap_Nilai_Ujian_Meja.pdf');
+        }
+
+        function printStudentPDF(studentId) {
+            const student = appData.students.find(s => s.id === studentId);
+            const studentScores = appData.scores.filter(s => s.studentId === studentId);
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Header
+            addPDFHeader(doc);
+            
+            doc.setFontSize(14);
+            doc.setFont(undefined, 'bold');
+            doc.text('LEMBAR PENILAIAN UJIAN MEJA MAKALAH', doc.internal.pageSize.width / 2, 55, { align: 'center' });
+            
+            // Student Info
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+            doc.text(`Nama Siswa: ${student.name}`, 20, 70);
+            doc.text(`NIS: ${student.nis}`, 20, 77);
+            doc.text(`Kelas: ${student.kelas}`, 20, 84);
+            doc.text(`Judul Makalah: ${student.judulMakalah || '-'}`, 20, 91);
+            
+            // Scores Table
+            const headers = [['No', 'Aspek Penilaian', 'Bobot', ...appData.users.filter(u => u.role === 'penguji').map(p => p.name)]];
+            
+            const data = appData.assessmentAspects.map((aspect, i) => {
+                const scores = appData.users.filter(u => u.role === 'penguji').map(ex => {
+                    const scoreRecord = studentScores.find(s => s.examinerId === ex.id);
+                    if (scoreRecord && scoreRecord.details) {
+                        const detail = scoreRecord.details.find(d => d.aspectId === aspect.id);
+                        return detail ? detail.score : '-';
+                    }
+                    return '-';
+                });
+                return [i + 1, aspect.name, aspect.weight + '%', ...scores];
+            });
+
+            // Add total row
+            const totals = appData.users.filter(u => u.role === 'penguji').map(ex => {
+                const score = studentScores.find(s => s.examinerId === ex.id);
+                return score ? score.totalScore.toFixed(1) : '-';
+            });
+            data.push(['', 'TOTAL NILAI', '100%', ...totals]);
+
+            doc.autoTable({
+                head: headers,
+                body: data,
+                startY: 100,
+                styles: { fontSize: 9, cellPadding: 3 },
+                headStyles: { fillColor: [102, 126, 234] }
+            });
+
+            // Average
+            const avgScore = studentScores.length > 0 
+                ? (studentScores.reduce((a, b) => a + b.totalScore, 0) / studentScores.length).toFixed(1)
+                : '-';
+            
+            const finalY = doc.lastAutoTable.finalY + 10;
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.text(`NILAI RATA-RATA: ${avgScore}`, 20, finalY);
+
+            // Signatures
+            addPDFSignatures(doc);
+            
+            doc.save(`Nilai_${student.name.replace(/\s+/g, '_')}.pdf`);
+        }
+
+        function addPDFHeader(doc) {
+            const pageWidth = doc.internal.pageSize.width;
+            
+            // Logos
+            if (appData.settings.ministryLogo) {
+                doc.addImage(appData.settings.ministryLogo, 'PNG', 20, 10, 20, 20);
+            }
+            if (appData.settings.schoolLogo) {
+                doc.addImage(appData.settings.schoolLogo, 'PNG', pageWidth - 40, 10, 20, 20);
+            }
+            
+            // KOP Text
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            const kopLines = appData.settings.kopDinas.split('\n');
+            let y = 12;
+            kopLines.forEach(line => {
+                doc.text(line, pageWidth / 2, y, { align: 'center' });
+                y += 6;
+            });
+            
+            // Lines
+            doc.setLineWidth(0.5);
+            doc.line(20, 35, pageWidth - 20, 35);
+            doc.setLineWidth(0.2);
+            doc.line(20, 37, pageWidth - 20, 37);
+        }
+
+        function addPDFSignatures(doc) {
+            const pageWidth = doc.internal.pageSize.width;
+            const pageHeight = doc.internal.pageSize.height;
+            const y = pageHeight - 60;
+            
+            const today = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+            
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+            
+            // Examiners
+            const examiners = appData.users.filter(u => u.role === 'penguji');
+            
+            if (examiners.length > 0) {
+                doc.text('Penguji 1,', 30, y);
+                doc.text(examiners[0]?.name || '________________', 30, y + 25);
+            }
+            
+            if (examiners.length > 1) {
+                doc.text('Penguji 2,', 80, y);
+                doc.text(examiners[1]?.name || '________________', 80, y + 25);
+            }
+            
+            // Principal
+            doc.text(`Nagawutung, ${today}`, pageWidth - 70, y - 10);
+            doc.text('Mengetahui,', pageWidth - 70, y);
+            doc.text('Kepala Sekolah', pageWidth - 70, y + 6);
+            doc.text(appData.settings.principalName || '________________', pageWidth - 70, y + 25);
+            if (appData.settings.principalNIP) {
+                doc.text(`NIP. ${appData.settings.principalNIP}`, pageWidth - 70, y + 30);
+            }
+        }
+
+        // ==================== MODAL ====================
+        function showModal(title, content) {
+            const modal = document.createElement('div');
+            modal.id = 'modal';
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-white rounded-xl shadow-2xl w-full max-w-md animate-fade-in max-h-[90vh] overflow-y-auto">
+                    <div class="flex items-center justify-between p-4 border-b">
+                        <h3 class="text-lg font-semibold text-gray-800">${title}</h3>
+                        <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    <div class="p-5">${content}</div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('modal');
+            if (modal) modal.remove();
+        }
+
+        // ==================== TOAST ====================
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg text-white shadow-lg z-50 animate-fade-in ${type === 'success' ? 'bg-green-500' : type === 'warning' ? 'bg-yellow-500' : 'bg-red-500'}`;
+            toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} mr-2"></i>${message}`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // ==================== INIT ====================
+        // Check if there's a logged in session
+        window.addEventListener('load', () => {
+            // Initialize Firebase on page load
+            initFirebaseOnLoad();
+        });
+        
+        function initFirebaseOnLoad() {
+            const config = firebaseConfig || defaultFirebaseConfig;
+            
+            try {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(config);
+                    console.log('🔥 Firebase initialized');
+                }
+            } catch (err) {
+                console.log('Firebase init error:', err);
+            }
+        }
+    </script>
+</body>
+</html>
