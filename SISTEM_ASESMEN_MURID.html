@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Asesmen Murid - SMP Negeri 1 Nagawutung</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        * { font-family: 'Poppins', sans-serif; }
+        .sidebar-transition { transition: all 0.3s ease-in-out; }
+        .card-hover:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
+        .gradient-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .gradient-success { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+        .gradient-warning { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .gradient-info { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .gradient-dark { background: linear-gradient(135deg, #434343 0%, #000000 100%); }
+        .glass-effect { background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); }
+        .table-row-hover:hover { background: linear-gradient(90deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%); }
+        .input-focus:focus { box-shadow: 0 0 0 3px rgba(102,126,234,0.3); }
+        .animate-fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .scrollbar-thin::-webkit-scrollbar { width: 6px; }
+        .scrollbar-thin::-webkit-scrollbar-track { background: #f1f1f1; }
+        .scrollbar-thin::-webkit-scrollbar-thumb { background: #667eea; border-radius: 3px; }
+        @media print { .no-print { display: none !important; } }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <!-- Login Page -->
+    <div id="loginPage" class="min-h-screen flex items-center justify-center gradient-primary p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 animate-fade-in">
+            <div class="text-center mb-8">
+                <div class="w-20 h-20 mx-auto bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center mb-4">
+                    <i class="fas fa-graduation-cap text-white text-3xl"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-800">Sistem Asesmen Murid</h1>
+                <p class="text-gray-500 text-sm mt-1">SMP Negeri 1 Nagawutung</p>
+                <p class="text-xs text-indigo-600 mt-2">Admin: <strong>admin</strong> | Password: <strong>admin123</strong></p>
+            </div>
+            <form id="loginForm" class="space-y-5">
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-2">Username</label>
+                    <div class="relative">
+                        <i class="fas fa-user absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <input type="text" id="username" class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg input-focus focus:outline-none focus:border-indigo-500 transition" placeholder="Masukkan username">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-2">Password</label>
+                    <div class="relative">
+                        <i class="fas fa-lock absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <input type="password" id="password" class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg input-focus focus:outline-none focus:border-indigo-500 transition" placeholder="Masukkan password">
+                    </div>
+                </div>
+                <button type="submit" class="w-full gradient-primary text-white py-3 rounded-lg font-semibold hover:opacity-90 transition transform hover:scale-[1.02] active:scale-[0.98]">
+                    <i class="fas fa-sign-in-alt mr-2"></i>Login
+                </button>
+            </form>
+            <div id="loginError" class="hidden mt-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm text-center">
+                <i class="fas fa-exclamation-circle mr-1"></i> Username atau password salah!
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard" class="hidden min-h-screen">
+        <!-- Mobile Overlay -->
+        <div id="sidebarOverlay" class="hidden fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden" onclick="toggleSidebar()"></div>
+        
+        <!-- Sidebar -->
+        <aside id="sidebar" class="fixed left-0 top-0 h-full w-64 gradient-primary text-white z-50 sidebar-transition transform -translate-x-full lg:translate-x-0 overflow-y-auto scrollbar-thin">
+            <div class="p-5 border-b border-white/20">
+                <div class="flex items-center space-x-3">
+                    <div id="sidebarLogo" class="w-12 h-12 bg-white rounded-full flex items-center justify-center">
+                        <i class="fas fa-graduation-cap text-indigo-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-sm">SMP N 1 Nagawutung</h2>
+                        <p class="text-xs text-white/70">Sistem Asesmen</p>
+                    </div>
+                </div>
+            </div>
+            <nav class="p-4">
+                <p class="text-xs text-white/50 uppercase tracking-wider mb-3">Menu Utama</p>
+                <ul class="space-y-2" id="sidebarMenu"></ul>
+            </nav>
+            <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/20">
+                <button onclick="logout()" class="w-full bg-white/10 hover:bg-white/20 py-2 rounded-lg transition flex items-center justify-center space-x-2">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="lg:ml-64 min-h-screen">
+            <!-- Top Navbar -->
+            <header class="glass-effect sticky top-0 z-30 px-4 py-3 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <button onclick="toggleSidebar()" class="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition">
+                            <i class="fas fa-bars text-gray-600 text-xl"></i>
+                        </button>
+                        <div>
+                            <h1 id="pageTitle" class="text-lg font-semibold text-gray-800">Dashboard</h1>
+                            <p class="text-xs text-gray-500" id="currentDate"></p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div class="hidden sm:block text-right">
+                            <p class="text-sm font-medium text-gray-800" id="userNameDisplay"></p>
+                            <p class="text-xs text-gray-500" id="userRoleDisplay"></p>
+                        </div>
+                        <div class="w-10 h-10 gradient-primary rounded-full flex items-center justify-center">
+                            <i class="fas fa-user text-white"></i>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Content Area -->
+            <div class="p-4 md:p-6" id="contentArea"></div>
+        </main>
+    </div>
+
+    <script>
+        // ==================== DATA STORE ====================
+        const defaultData = {
+            users: [
+                { id: 1, username: 'admin', password: 'admin123', name: 'Administrator', role: 'admin' },
+                { id: 2, username: 'guru1', password: 'guru123', name: 'Guru 1', role: 'guru' }
+            ],
+            students: [],
+            socialEmotional: [],
+            literacyAssessment: [],
+            numeracyAssessment: [],
+            talentInterest: []
+        };
+
+        let appData = JSON.parse(localStorage.getItem('asesmenSystemData')) || JSON.parse(JSON.stringify(defaultData));
+        let currentUser = null;
+
+        function saveData() {
+            localStorage.setItem('asesmenSystemData', JSON.stringify(appData));
+        }
+
+        // ==================== AUTH ====================
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            const user = appData.users.find(u => u.username === username && u.password === password);
+            
+            if (user) {
+                currentUser = user;
+                document.getElementById('loginError').classList.add('hidden');
+                document.getElementById('loginPage').classList.add('hidden');
+                document.getElementById('dashboard').classList.remove('hidden');
+                initDashboard();
+            } else {
+                document.getElementById('loginError').classList.remove('hidden');
+            }
+        });
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('dashboard').classList.add('hidden');
+            document.getElementById('loginPage').classList.remove('hidden');
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+        }
+
+        // ==================== SIDEBAR ====================
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        }
+
+        function initDashboard() {
+            document.getElementById('userNameDisplay').textContent = currentUser.name;
+            document.getElementById('userRoleDisplay').textContent = currentUser.role === 'admin' ? 'Administrator' : 'Guru';
+            document.getElementById('currentDate').textContent = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            
+            renderSidebar();
+            navigateTo('dashboard');
+        }
+
+        function renderSidebar() {
+            const menu = document.getElementById('sidebarMenu');
+            let menuItems = [];
+            
+            if (currentUser.role === 'admin') {
+                menuItems = [
+                    { id: 'dashboard', icon: 'fas fa-tachometer-alt', label: 'Dashboard' },
+                    { id: 'siswa', icon: 'fas fa-users', label: 'Data Siswa' },
+                    { id: 'sosialEmosional', icon: 'fas fa-heart', label: 'Sosial-Emosional' },
+                    { id: 'literasi', icon: 'fas fa-book', label: 'Assessment Literasi' },
+                    { id: 'numerasi', icon: 'fas fa-calculator', label: 'Assessment Numerasi' },
+                    { id: 'bakatMinat', icon: 'fas fa-star', label: 'Bakat & Minat' },
+                    { id: 'rekap', icon: 'fas fa-chart-bar', label: 'Rekap Asesmen' },
+                    { id: 'pengaturan', icon: 'fas fa-cog', label: 'Pengaturan' }
+                ];
+            } else {
+                menuItems = [
+                    { id: 'dashboard', icon: 'fas fa-tachometer-alt', label: 'Dashboard' },
+                    { id: 'siswa', icon: 'fas fa-users', label: 'Data Siswa' },
+                    { id: 'sosialEmosional', icon: 'fas fa-heart', label: 'Sosial-Emosional' },
+                    { id: 'literasi', icon: 'fas fa-book', label: 'Assessment Literasi' },
+                    { id: 'numerasi', icon: 'fas fa-calculator', label: 'Assessment Numerasi' },
+                    { id: 'bakatMinat', icon: 'fas fa-star', label: 'Bakat & Minat' },
+                    { id: 'rekap', icon: 'fas fa-chart-bar', label: 'Rekap Asesmen' }
+                ];
+            }
+            
+            menu.innerHTML = menuItems.map(item => `
+                <li>
+                    <a href="#" onclick="navigateTo('${item.id}')" class="menu-item flex items-center space-x-3 p-3 rounded-lg hover:bg-white/10 transition" data-page="${item.id}">
+                        <i class="${item.icon}"></i>
+                        <span>${item.label}</span>
+                    </a>
+                </li>
+            `).join('');
+        }
+
+        function setActiveMenu(pageId) {
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.classList.remove('bg-white/20');
+                if (item.dataset.page === pageId) {
+                    item.classList.add('bg-white/20');
+                }
+            });
+        }
+
+        // ==================== NAVIGATION ====================
+        function navigateTo(page) {
+            setActiveMenu(page);
+            document.getElementById('pageTitle').textContent = getPageTitle(page);
+            
+            if (window.innerWidth < 1024) {
+                document.getElementById('sidebar').classList.add('-translate-x-full');
+                document.getElementById('sidebarOverlay').classList.add('hidden');
+            }
+            
+            const content = document.getElementById('contentArea');
+            content.innerHTML = '<div class="flex justify-center items-center h-64"><div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div></div>';
+            
+            setTimeout(() => {
+                switch(page) {
+                    case 'dashboard': renderDashboard(); break;
+                    case 'siswa': renderSiswa(); break;
+                    case 'sosialEmosional': renderSosialEmosional(); break;
+                    case 'literasi': renderLiterasi(); break;
+                    case 'numerasi': renderNumerasi(); break;
+                    case 'bakatMinat': renderBakatMinat(); break;
+                    case 'rekap': renderRekap(); break;
+                    case 'pengaturan': renderPengaturan(); break;
+                }
+            }, 100);
+        }
+
+        function getPageTitle(page) {
+            const titles = {
+                dashboard: 'Dashboard',
+                siswa: 'Data Siswa',
+                sosialEmosional: 'Identifikasi Sosial-Emosional',
+                literasi: 'Assessment Literasi',
+                numerasi: 'Assessment Numerasi',
+                bakatMinat: 'Identifikasi Bakat & Minat',
+                rekap: 'Rekap Asesmen',
+                pengaturan: 'Pengaturan'
+            };
+            return titles[page] || 'Dashboard';
+        }
+
+        // ==================== DASHBOARD PAGE ====================
+        function renderDashboard() {
+            const totalStudents = appData.students.length;
+            const totalSocialEmotional = appData.socialEmotional.length;
+            const totalLiteracy = appData.literacyAssessment.length;
+            const totalNumeracy = appData.numeracyAssessment.length;
+            const totalTalent = appData.talentInterest.length;
+
+            const content = document.getElementById('contentArea');
+            content.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                    <div class="bg-white rounded-xl shadow-lg p-6 card-hover gradient-primary text-white">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm opacity-80">Total Siswa</p>
+                                <h3 class="text-3xl font-bold">${totalStudents}</h3>
+                            </div>
+                            <i class="fas fa-users text-4xl opacity-50"></i>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-lg p-6 card-hover gradient-success text-white">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm opacity-80">Sosial-Emosional</p>
+                                <h3 class="text-3xl font-bold">${totalSocialEmotional}</h3>
+                            </div>
+                            <i class="fas fa-heart text-4xl opacity-50"></i>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-lg p-6 card-hover gradient-warning text-white">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm opacity-80">Literasi</p>
+                                <h3 class="text-3xl font-bold">${totalLiteracy}</h3>
+                            </div>
+                            <i class="fas fa-book text-4xl opacity-50"></i>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-lg p-6 card-hover gradient-info text-white">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm opacity-80">Numerasi</p>
+                                <h3 class="text-3xl font-bold">${totalNumeracy}</h3>
+                            </div>
+                            <i class="fas fa-calculator text-4xl opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4"><i class="fas fa-info-circle mr-2 text-indigo-600"></i>Credential Login</h3>
+                        <div class="bg-indigo-50 rounded-lg p-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <p class="text-sm text-gray-600">Username Admin</p>
+                                    <p class="text-lg font-bold text-indigo-600">admin</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-600">Password Admin</p>
+                                    <p class="text-lg font-bold text-indigo-600">admin123</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4"><i class="fas fa-chart-pie mr-2 text-indigo-600"></i>Statistik Bakat & Minat</h3>
+                        <div class="space-y-3">
+                            ${getTalentStatistics()}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getTalentStatistics() {
+            const talents = {};
+            appData.talentInterest.forEach(t => {
+                if (t.talent) {
+                    talents[t.talent] = (talents[t.talent] || 0) + 1;
+                }
+            });
+            
+            if (Object.keys(talents).length === 0) {
+                return '<p class="text-gray-500 text-sm">Belum ada data bakat & minat</p>';
+            }
+            
+            return Object.entries(talents).map(([talent, count]) => `
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-700">${talent}</span>
+                    <span class="bg-indigo-100 text-indigo-600 px-3 py-1 rounded-full text-sm font-semibold">${count} siswa</span>
+                </div>
+            `).join('');
+        }
+
+        // ==================== SISWA PAGE ====================
+        function renderSiswa() {
+            const content = document.getElementById('contentArea');
+            content.innerHTML = `
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-semibold text-gray-800">Data Siswa</h3>
+                        <button onclick="showAddSiswaModal()" class="gradient-primary text-white px-4 py-2 rounded-lg hover:opacity-90 transition">
+                            <i class="fas fa-plus mr-2"></i>Tambah Siswa
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="bg-gray-50">
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">No</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">NIS/NISN</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Nama Lengkap</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Kelas</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${appData.students.length === 0 ? 
+                                    '<tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">Belum ada data siswa</td></tr>' :
+                                    appData.students.map((student, index) => `
+                                        <tr class="table-row-hover border-b">
+                                            <td class="px-4 py-3 text-sm">${index + 1}</td>
+                                            <td class="px-4 py-3 text-sm">${student.nis || '-'}</td>
+                                            <td class="px-4 py-3 text-sm font-medium">${student.name}</td>
+                                            <td class="px-4 py-3 text-sm">${student.class || '-'}</td>
+                                            <td class="px-4 py-3">
+                                                <button onclick="deleteSiswa(${student.id})" class="text-red-600 hover:text-red-800">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    `).join('')
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showAddSiswaModal() {
+            const modalContent = `
+                <form id="addSiswaForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">NIS/NISN</label>
+                        <input type="text" id="nisInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Nama Lengkap</label>
+                        <input type="text" id="namaInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus focus:outline-none focus:border-indigo-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Kelas</label>
+                        <input type="text" id="kelasInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div class="flex justify-end space-x-3 pt-4">
+                        <button type="button" onclick="closeModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">Batal</button>
+                        <button type="submit" class="px-4 py-2 gradient-primary text-white rounded-lg hover:opacity-90">Simpan</button>
+                    </div>
+                </form>
+            `;
+            
+            showModal('Tambah Siswa', modalContent);
+            
+            document.getElementById('addSiswaForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const newStudent = {
+                    id: Date.now(),
+                    nis: document.getElementById('nisInput').value,
+                    name: document.getElementById('namaInput').value,
+                    class: document.getElementById('kelasInput').value
+                };
+                appData.students.push(newStudent);
+                saveData();
+                closeModal();
+                renderSiswa();
+                showToast('Siswa berhasil ditambahkan!');
+            });
+        }
+
+        function deleteSiswa(id) {
+            if (confirm('Yakin ingin menghapus siswa ini?')) {
+                appData.students = appData.students.filter(s => s.id !== id);
+                saveData();
+                renderSiswa();
+                showToast('Siswa berhasil dihapus!', 'error');
+            }
+        }
+
+        // ==================== SOSIAL EMOSIONAL PAGE ====================
+        function renderSosialEmosional() {
+            const content = document.getElementById('contentArea');
+            content.innerHTML = `
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-semibold text-gray-800">Identifikasi Kondisi Sosial-Emosional & Konsentrasi Belajar</h3>
+                        <button onclick="showSosialEmosionalModal()" class="gradient-primary text-white px-4 py-2 rounded-lg hover:opacity-90 transition">
+                            <i class="fas fa-plus mr-2"></i>Tambah Penilaian
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="bg-gray-50">
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Tanggal</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Nama Siswa</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Kondisi Emosional</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Interaksi Sosial</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Konsentrasi</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${appData.socialEmotional.length === 0 ? 
+                                    '<tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">Belum ada data penilaian sosial-emosional</td></tr>' :
+                                    appData.socialEmotional.map((item, index) => {
+                                        const student = appData.students.find(s => s.id === item.studentId);
+                                        return `
+                                            <tr class="table-row-hover border-b">
+                                                <td class="px-4 py-3 text-sm">${new Date(item.date).toLocaleDateString('id-ID')}</td>
+                                                <td class="px-4 py-3 text-sm font-medium">${student ? student.name : 'Unknown'}</td>
+                                                <td class="px-4 py-3 text-sm">
+                                                    <span class="px-2 py-1 rounded-full text-xs font-semibold ${getEmotionalColor(item.emotionalState)}">${item.emotionalState}</span>
+                                                </td>
+                                                <td class="px-4 py-3 text-sm">${item.socialInteraction}/10</td>
+                                                <td class="px-4 py-3 text-sm">
+                                                    <span class="px-2 py-1 rounded-full text-xs font-semibold ${getConcentrationColor(item.concentration)}">${item.concentration}</span>
+                                                </td>
+                                                <td class="px-4 py-3">
+                                                    <button onclick="deleteSosialEmosional(${item.id})" class="text-red-600 hover:text-red-800">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        `;
+                                    }).join('')
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getEmotionalColor(state) {
+            const colors = {
+                'Stabil': 'bg-green-100 text-green-700',
+                'Cemas': 'bg-yellow-100 text-yellow-700',
+                'Sedih': 'bg-blue-100 text-blue-700',
+                'Marah': 'bg-red-100 text-red-700',
+                'Semangat': 'bg-purple-100 text-purple-700'
+            };
+            return colors[state] || 'bg-gray-100 text-gray-700';
+        }
+
+        function getConcentrationColor(level) {
+            const colors = {
+                'Sangat Baik': 'bg-green-100 text-green-700',
+                'Baik': 'bg-blue-100 text-blue-700',
+                'Cukup': 'bg-yellow-100 text-yellow-700',
+                'Kurang': 'bg-red-100 text-red-700'
+            };
+            return colors[level] || 'bg-gray-100 text-gray-700';
+        }
+
+        function showSosialEmosionalModal() {
+            const students = appData.students;
+            const modalContent = `
+                <form id="sosialEmosionalForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Pilih Siswa</label>
+                        <select id="studentSelect" class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus focus:outline-none focus:border-indigo-500" required>
+                            <option value="">-- Pilih Siswa --</option>
+                            ${students.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Tanggal Penilaian</label>
+                        <input type="date" id="dateInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus focus:outline-none focus:border-indigo-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Kondisi Emosional</label>
+                        <select id="emotionalSelect" class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus focus:outline-none focus:border-indigo-500" required>
+                            <option value="">-- Pilih Kondisi --</option>
+                            <option value="Stabil">Stabil</option>
+                            <option value="Cemas">Cemas</option>
+                            <option value="Sedih">Sedih</option>
+                            <option value="Marah">Marah</option>
+                            <option value="Semangat">Semangat</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Interaksi Sosial (1-10)</label>
+                        <input type="number" id="socialInput" min="1" max="10" class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus focus:outline-none focus:border-indigo-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Konsentrasi Belajar</label>
+                        <select id="concentrationSelect" class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus focus:outline-none focus:border-indigo-500" required>
+                            <option value="">-- Pilih Level --</option>
+                            <option value="Sangat Baik">Sangat Baik</option>
+                            <option value="Baik">Baik</option>
+                            <option value="Cukup">Cukup</option>
+                            <option value="Kurang">Kurang</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Catatan Tambahan</label>
+                        <textarea id="notesInput" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus focus:outline-none focus:border-indigo-500"></textarea>
+                    </div>
+                    <div class="flex justify-end space-x-3 pt-4">
+                        <button type="button" onclick="closeModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">Batal</button>
+                        <button type="submit" class="px-4 py-2 gradient-primary text-white rounded-lg hover:opacity-90">Simpan</button>
+                    </div>
+                </form>
+            `;
+            
+            showModal('Penilaian Sosial-Emosional', modalContent);
+            document.getElementById('dateInput').valueAsDate = new Date();
+            
+            document.getElementById('sosialEmosionalForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const newAssessment = {
+                    id: Date.now(),
+                    studentId: parseInt(document.getElementById('studentSelect').value),
+                    date: document.getElementById('dateInput').value,
+                    emotionalState: document.getElementById('emotionalSelect').value,
+                    socialInteraction: parseInt(document.getElementById('socialInput').value),
+                    concentration: document.getElementById('concentrationSelect').value,
+                    notes: document.getElementById('notesInput').value
+                };
+                appData.socialEmotional.push(newAssessment);
+                saveData();
+                closeModal();
+                renderSosialEmosional();
+                showToast('Penilaian berhasil ditambahkan!');
+            });
+        }
+
+        function deleteSosialEmosional(id) {
+            if (confirm('Yakin ingin menghapus penilaian ini?')) {
+                appData.socialEmotional = appData.socialEmotional.filter(s => s.id !== id);
+                saveData();
+                renderSosialEmosional();
+                showToast('Penilaian berhasil dihapus!', 'error');
+            }
+        }
+
+        // ==================== LITERASI PAGE ====================
+        function renderLiterasi() {
+            const content = document.getElementById('contentArea');
+            content.innerHTML = `
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-semibold text-gray-800">Assessment Literasi</h3>
+                        <button onclick="showLiterasiModal()" class="gradient-primary text-white px-4 py-2 rounded-lg hover:opacity-90 transition">
+                            <i class="fas fa-plus mr-2"></i>Tambah Assessment
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="bg-gray-50">
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Tanggal</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Nama Siswa</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Jenis Tes</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Skor</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Level</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${appData.literacyAssessment.length === 0 ? 
+                                    '<tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">Belum ada data assessment literasi</td></tr>' :
+                                    appData.literacyAssessment.map((item, index) => {
+                                        const student = appData.students.find(s => s.id === item.studentId);
+                                        return `
+                                            <tr class="table-row-hover border-b">
+                                                <td class="px-4 py-3 text-sm">${new Date(item.date).toLocaleDateString('id-ID')}</td>
+                                                <td class="px-4 py-3 text-sm font-medium">${student ? student.name : 'Unknown'}</td>
+                                                <td class="px-4 py-3 text-sm">${item.testType}</td>
+                                                <td class="px-4 py-3 text-sm font-bold">${item.score}</td>
+                                                <td class="px-4 py-3 text-sm">
+                                                    <span class="px-2 py-1 rounded-full text-xs font-semibold ${getLiteracyLevelColor(item.level)}">${item.level}</span>
+                                                </td>
+                                                <td class="px-4 py-3">
+                                                    <button onclick="deleteLiterasi(${item.id})" class="text-red-600 hover:text-red-800">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        `;
+                                    }).join('')
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getLiteracyLevelColor(level) {
+            const colors = {
+                'Mahir': 'bg-green-100 text-green-700',
+                'Cakap': 'bg-blue-100 text-blue-700',
+                'Layak': 'bg-yellow-100 text-yellow-700',
+                'Dasar': 'bg-orange-100 text-orange-700',
+                'Perlu Intervensi': 'bg-red-100 text-red-700'
+            };
+            return colors[level] || 'bg-gray-100 text-gray-700';
+        }
+
+        function showLiterasiModal() {
+            const students = appData.students;
+            const modalContent = `
+                <form id="literasiForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Pilih Siswa</label>
+                        <select id="studentSelect" class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus focus:outline-none focus:border-indigo-500" required>
+                            <option value="">-- Pilih Siswa --</option>
+                            ${students.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Tanggal Assessment</label>
+                        <input type="date" id="dateInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus focus:outline-none focus:border-indigo-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Jenis Tes Literasi</label>
+                        <select id="testTypeSelect" class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus focus:outline-none focus:border-indigo-500" required>
+                            <option value="">-- Pilih Jenis Tes --</option>
+                            <option value="Membaca Pemahaman">Membaca Pemahaman</option>
+                            <option value="Menulis Esai">Menulis Esai</option>
+                            <option value="Analisis Teks">Analisis Teks</option>
+                            <option value="Literasi Digital">Literasi Digital</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Skor (0-100)</label>
+                        <input type="number" id="scoreInput" min="0" max="100" class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus focus:outline-none focus:border-indigo-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Level Kompetensi</label>
+                        <select id="levelSelect" class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus focus:outline-none focus:border-indigo-500" required>
+                            <option value="">-- Pilih Level --</option>
+                            <option value="Mahir">Mahir (>85)</option>
+                            <option value="Cakap">Cakap (70-85)</option>
+                            <option value="Layak">Layak (55-69)</option>
+                            <option value="Dasar">Dasar (40-54)</option>
+                            <option value="Perlu Intervensi">Perlu Intervensi (<40)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Catatan</label>
+                        <textarea id="notesInput" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus focus:outline-none focus:border-indigo-500"></textarea>
+                    </div>
+                    <div class="flex justify-end space-x-3 pt-4">
+                        <button type="button" onclick="closeModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">Batal</button>
+                        <button type="submit" class="px-4 py-2 gradient-primary text-white rounded-lg hover:opacity-90">Simpan</button>
+                    </div>
+                </form>
+            `;
+            
+            showModal('Assessment Literasi', modalContent);
+            document.getElementById('dateInput').valueAsDate = new Date();
+            
+            document.getElementById('literasiForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const newAssessment = {
+                    id: Date.now(),
+                    studentId: parseInt(document.getElementById('studentSelect').value),
+                    date: document.getElementById('dateInput').value,
+                    testType: document.getElementById('testTypeSelect').value,
+                    score: parseInt(document.getElementById('scoreInput').value),
+                    level: document.getElementById('levelSelect').value,
+                    notes: document.getElementById('notesInput').value
+                };
+                appData.literacyAssessment.push(newAssessment);
+                saveData();
+                closeModal();
+                renderLiterasi();
+                showToast('Assessment berhasil ditambahkan!');
+            });
+        }
+
+        function deleteLiterasi(id) {
+            if (confirm('Yakin ingin menghapus assessment ini?')) {
+                appData.literacyAssessment = appData.literacyAssessment.filter(s => s.id !== id);
+                saveData();
+                renderLiterasi();
+                showToast('Assessment berhasil dihapus!', 'error');
+            }
+        }
+
+        // ==================== NUMERASI PAGE ====================
+        function renderNumerasi() {
+            const content = document.getElementById('contentArea');
+            content.innerHTML = `
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-semibold text-gray-800">Assessment Numerasi</h3>
+                        <button onclick="showNumerasiModal()" class="gradient-primary text-white px-4 py-2 rounded-lg hover:opacity-90 transition">
+                            <i class="fas fa-plus mr-2"></i>Tambah Assessment
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="bg-gray-50">
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Tanggal</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Nama Siswa</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Jenis Tes</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Skor</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Level</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${appData.numeracyAssessment.length === 0 ? 
+                                    '<tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">Belum ada data assessment numerasi</td></tr>' :
+                                    appData.numeracyAssessment.map((item, index) => {
+                                        const student = appData.students.find(s => s.id === item.studentId);
+                                        return `
+                                            <tr class="table-row-hover border-b">
+                                                <td class="px-4 py-3 text-sm">${new Date(item.date).toLocaleDateString('id-ID')}</td>
+                                                <td class="px-4 py-3 text-sm font-medium">${student ? student.name : 'Unknown'}</td>
+                                                <td class="px-4 py-3 text-sm">${item.testType}</td>
+                                                <td class="px-4 py-3 text-sm font-bold">${item.score}</td>
+                                                <td class="px-4 py-3 text-sm">
+                                                    <span class="px-2 py-1 rounded-full text-xs font-semibold ${getNumeracyLevelColor(item.level)}">${item.level}</span>
+                                                </td>
+                                                <td class="px-4 py-3">
+                                                    <button onclick="deleteNumerasi(${item.id})" class="text-red-600 hover:text-red-800">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        `;
+                                    }).join('')
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getNumeracyLevelColor(level) {
+            const colors = {
+                'Mahir': 'bg-green-100 text-green-700',
+                'Cakap': 'bg-blue-100 text-blue-700',
+                'Layak': 'bg-yellow-100 text-yellow-700',
+                'Dasar': 'bg-orange-100 text-orange-700',
+                'Perlu Intervensi': 'bg-red-100 text-red-700'
+            };
+            return colors[level] || 'bg-gray-100 text-gray-700';
+        }
+
+        function showNumerasiModal() {
+            const students = appData.students;
+            const modalContent = `
+                <form id="numerasiForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Pilih Siswa</label>
+                        <select id="studentSelect" class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus focus:outline-none focus:border-indigo-500" required>
+                            <option value="">-- Pilih Siswa --</option>
+                            ${students.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Tanggal Assessment</label>
+                        <input type="date" id="dateInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus focus:outline-none focus:border-indigo-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Jenis Tes Numerasi</label>
+                        <select id="testTypeSelect" class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus focus:outline-none focus:border-indigo-500" required>
+                            <option value="">-- Pilih Jenis Tes --</option>
+                            <option value="Aritmatika">Aritmatika</option>
+                            <option value="Aljabar">Aljabar</option>
+                            <option value="Geometri">Geometri</option>
+                            <option value="Statistika">Statistika</option>
+                            <option value="Pemecahan Masalah">Pemecahan Masalah</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Skor (0-100)</label>
+                        <input type="number" id="scoreInput" min="0" max="100" class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus focus:outline-none focus:border-indigo-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Level Kompetensi</label>
+                        <select id="levelSelect" class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus focus:outline-none focus:border-indigo-500" required>
+                            <option value="">-- Pilih Level --</option>
+                            <option value="Mahir">Mahir (>85)</option>
+                            <option value="Cakap">Cakap (70-85)</option>
+                            <option value="Layak">Layak (55-69)</option>
+                            <option value="Dasar">Dasar (40-54)</option>
+                            <option value="Perlu Intervensi">Perlu Intervensi (<40)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Catatan</label>
+                        <textarea id="notesInput" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus focus:outline-none focus:border-indigo-500"></textarea>
+                    </div>
+                    <div class="flex justify-end space-x-3 pt-4">
+                        <button type="button" onclick="closeModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">Batal</button>
+                        <button type="submit" class="px-4 py-2 gradient-primary text-white rounded-lg hover:opacity-90">Simpan</button>
+                    </div>
+                </form>
+            `;
+            
+            showModal('Assessment Numerasi', modalContent);
+            document.getElementById('dateInput').valueAsDate = new Date();
+            
+            document.getElementById('numerasiForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const newAssessment = {
+                    id: Date.now(),
+                    studentId: parseInt(document.getElementById('studentSelect').value),
+                    date: document.getElementById('dateInput').value,
+                    testType: document.getElementById('testTypeSelect').value,
+                    score: parseInt(document.getElementById('scoreInput').value),
+                    level: document.getElementById('levelSelect').value,
+                    notes: document.getElementById('notesInput').value
+                };
+                appData.numeracyAssessment.push(newAssessment);
+                saveData();
+                closeModal();
+                renderNumerasi();
+                showToast('Assessment berhasil ditambahkan!');
+            });
+        }
+
+        function deleteNumerasi(id) {
+            if (confirm('Yakin ingin menghapus assessment ini?')) {
+                appData.numeracyAssessment = appData.numeracyAssessment.filter(s => s.id !== id);
+                saveData();
+                renderNumerasi();
+                showToast('Assessment berhasil dihapus!', 'error');
+            }
+        }
+
+        // ==================== BAKAT MINAT PAGE ====================
+        function renderBakatMinat() {
+            const content = document.getElementById('contentArea');
+            content.innerHTML = `
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-semibold text-gray-800">Identifikasi Bakat & Minat</h3>
+                        <button onclick="showBakatMinatModal()" class="gradient-primary text-white px-4 py-2 rounded-lg hover:opacity-90 transition">
+                            <i class="fas fa-plus mr-2"></i>Tambah Data
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="bg-gray-50">
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Tanggal</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Nama Siswa</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Bakat</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Minat</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Potensi</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${appData.talentInterest.length === 0 ? 
+                                    '<tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">Belum ada data bakat & minat</td></tr>' :
+                                    appData.talentInterest.map((item, index) => {
+                                        const student = appData.students.find(s => s.id === item.studentId);
+                                        return `
+                                            <tr class="table-row-hover border-b">
+                                                <td class="px-4 py-3 text-sm">${new Date(item.date).toLocaleDateString('id-ID')}</td>
+                                                <td class="px-4 py-3 text-sm font-medium">${student ? student.name : 'Unknown'}</td>
+                                                <td class="px-4 py-3 text-sm">${item.talent}</td>
+                                                <td class="px-4 py-3 text-sm">${item.interest}</td>
+                                                <td class="px-4 py-3 text-sm">
+                                                    <span class="px-2 py-1 rounded-full text-xs font-semibold ${getPotentialColor(item.potential)}">${item.potential}</span>
+                                                </td>
+                                                <td class="px-4 py-3">
+                                                    <button onclick="deleteBakatMinat(${item.id})" class="text-red-600 hover:text-red-800">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        `;
+                                    }).join('')
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getPotentialColor(level) {
+            const colors = {
+                'Sangat Tinggi': 'bg-green-100 text-green-700',
+                'Tinggi': 'bg-blue-100 text-blue-700',
+                'Sedang': 'bg-yellow-100 text-yellow-700',
+                'Perlu Pengembangan': 'bg-orange-100 text-orange-700'
+            };
+            return colors[level] || 'bg-gray-100 text-gray-700';
+        }
+
+        function showBakatMinatModal() {
+            const students = appData.students;
+            const modalContent = `
+                <form id="bakatMinatForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Pilih Siswa</label>
+                        <select id="studentSelect" class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus focus:outline-none focus:border-indigo-500" required>
+                            <option value="">-- Pilih Siswa --</option>
+                            ${students.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Tanggal Identifikasi</label>
+                        <input type="date" id="dateInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus focus:outline-none focus:border-indigo-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Bakat Unggulan</label>
+                        <select id="talentSelect" class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus focus:outline-none focus:border-indigo-500" required>
+                            <option value="">-- Pilih Bakat --</option>
+                            <option value="Olahraga">Olahraga</option>
+                            <option value="Seni Musik">Seni Musik</option>
+                            <option value="Seni Tari">Seni Tari</option>
+                            <option value="Seni Lukis">Seni Lukis</option>
+                            <option value="Akademik Matematika">Akademik Matematika</option>
+                            <option value="Akademik Sains">Akademik Sains</option>
+                            <option value="Bahasa">Bahasa</option>
+                            <option value="Kepemimpinan">Kepemimpinan</option>
+                            <option value="Teknologi">Teknologi</option>
+                            <option value="Lainnya">Lainnya</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Minat Utama</label>
+                        <select id="interestSelect" class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus focus:outline-none focus:border-indigo-500" required>
+                            <option value="">-- Pilih Minat --</option>
+                            <option value="Olahraga">Olahraga</option>
+                            <option value="Seni">Seni</option>
+                            <option value="Sains">Sains</option>
+                            <option value="Teknologi">Teknologi</option>
+                            <option value="Sosial">Sosial</option>
+                            <option value="Bisnis">Bisnis</option>
+                            <option value="Lainnya">Lainnya</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Level Potensi</label>
+                        <select id="potentialSelect" class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus focus:outline-none focus:border-indigo-500" required>
+                            <option value="">-- Pilih Level --</option>
+                            <option value="Sangat Tinggi">Sangat Tinggi</option>
+                            <option value="Tinggi">Tinggi</option>
+                            <option value="Sedang">Sedang</option>
+                            <option value="Perlu Pengembangan">Perlu Pengembangan</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Catatan & Rekomendasi</label>
+                        <textarea id="notesInput" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus focus:outline-none focus:border-indigo-500"></textarea>
+                    </div>
+                    <div class="flex justify-end space-x-3 pt-4">
+                        <button type="button" onclick="closeModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">Batal</button>
+                        <button type="submit" class="px-4 py-2 gradient-primary text-white rounded-lg hover:opacity-90">Simpan</button>
+                    </div>
+                </form>
+            `;
+            
+            showModal('Identifikasi Bakat & Minat', modalContent);
+            document.getElementById('dateInput').valueAsDate = new Date();
+            
+            document.getElementById('bakatMinatForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const newRecord = {
+                    id: Date.now(),
+                    studentId: parseInt(document.getElementById('studentSelect').value),
+                    date: document.getElementById('dateInput').value,
+                    talent: document.getElementById('talentSelect').value,
+                    interest: document.getElementById('interestSelect').value,
+                    potential: document.getElementById('potentialSelect').value,
+                    notes: document.getElementById('notesInput').value
+                };
+                appData.talentInterest.push(newRecord);
+                saveData();
+                closeModal();
+                renderBakatMinat();
+                showToast('Data berhasil ditambahkan!');
+            });
+        }
+
+        function deleteBakatMinat(id) {
+            if (confirm('Yakin ingin menghapus data ini?')) {
+                appData.talentInterest = appData.talentInterest.filter(s => s.id !== id);
+                saveData();
+                renderBakatMinat();
+                showToast('Data berhasil dihapus!', 'error');
+            }
+        }
+
+        // ==================== REKAP PAGE ====================
+        function renderRekap() {
+            const content = document.getElementById('contentArea');
+            content.innerHTML = `
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-semibold text-gray-800">Rekap Asesmen Murid</h3>
+                        <button onclick="exportToExcel()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+                            <i class="fas fa-file-excel mr-2"></i>Export Excel
+                        </button>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Filter Siswa</label>
+                        <select id="filterStudent" onchange="renderRekapTable()" class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus focus:outline-none focus:border-indigo-500">
+                            <option value="all">Semua Siswa</option>
+                            ${appData.students.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
+                        </select>
+                    </div>
+
+                    <div id="rekapTableContainer"></div>
+                </div>
+            `;
+            renderRekapTable();
+        }
+
+        function renderRekapTable() {
+            const filterId = document.getElementById('filterStudent').value;
+            let students = appData.students;
+            
+            if (filterId !== 'all') {
+                students = students.filter(s => s.id === parseInt(filterId));
+            }
+
+            const container = document.getElementById('rekapTableContainer');
+            
+            if (students.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-500 py-8">Belum ada data siswa</p>';
+                return;
+            }
+
+            let html = '<div class="overflow-x-auto"><table class="w-full"><thead><tr class="bg-gray-50">';
+            html += '<th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Nama Siswa</th>';
+            html += '<th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Sosial-Emosional</th>';
+            html += '<th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Literasi</th>';
+            html += '<th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Numerasi</th>';
+            html += '<th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Bakat & Minat</th>';
+            html += '</tr></thead><tbody>';
+
+            students.forEach(student => {
+                const social = appData.socialEmotional.filter(s => s.studentId === student.id);
+                const literacy = appData.literacyAssessment.filter(s => s.studentId === student.id);
+                const numeracy = appData.numeracyAssessment.filter(s => s.studentId === student.id);
+                const talent = appData.talentInterest.filter(s => s.studentId === student.id);
+
+                html += `<tr class="table-row-hover border-b">`;
+                html += `<td class="px-4 py-3 text-sm font-medium">${student.name}</td>`;
+                html += `<td class="px-4 py-3 text-sm">${social.length > 0 ? social[social.length - 1].emotionalState : '-'}</td>`;
+                html += `<td class="px-4 py-3 text-sm">${literacy.length > 0 ? literacy[literacy.length - 1].score : '-'}</td>`;
+                html += `<td class="px-4 py-3 text-sm">${numeracy.length > 0 ? numeracy[numeracy.length - 1].score : '-'}</td>`;
+                html += `<td class="px-4 py-3 text-sm">${talent.length > 0 ? talent[talent.length - 1].talent : '-'}</td>`;
+                html += `</tr>`;
+            });
+
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+        }
+
+        function exportToExcel() {
+            const data = appData.students.map(student => {
+                const social = appData.socialEmotional.filter(s => s.studentId === student.id);
+                const literacy = appData.literacyAssessment.filter(s => s.studentId === student.id);
+                const numeracy = appData.numeracyAssessment.filter(s => s.studentId === student.id);
+                const talent = appData.talentInterest.filter(s => s.studentId === student.id);
+
+                return {
+                    'Nama Siswa': student.name,
+                    'Kelas': student.class || '-',
+                    'Kondisi Emosional': social.length > 0 ? social[social.length - 1].emotionalState : '-',
+                    'Konsentrasi': social.length > 0 ? social[social.length - 1].concentration : '-',
+                    'Skor Literasi': literacy.length > 0 ? literacy[literacy.length - 1].score : '-',
+                    'Level Literasi': literacy.length > 0 ? literacy[literacy.length - 1].level : '-',
+                    'Skor Numerasi': numeracy.length > 0 ? numeracy[numeracy.length - 1].score : '-',
+                    'Level Numerasi': numeracy.length > 0 ? numeracy[numeracy.length - 1].level : '-',
+                    'Bakat': talent.length > 0 ? talent[talent.length - 1].talent : '-',
+                    'Minat': talent.length > 0 ? talent[talent.length - 1].interest : '-',
+                    'Potensi': talent.length > 0 ? talent[talent.length - 1].potential : '-'
+                };
+            });
+
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Rekap Asesmen');
+            XLSX.writeFile(wb, 'Rekap_Asesmen_Murid.xlsx');
+            showToast('File Excel berhasil diunduh!');
+        }
+
+        // ==================== PENGATURAN PAGE ====================
+        function renderPengaturan() {
+            const content = document.getElementById('contentArea');
+            content.innerHTML = `
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-6">Pengaturan Sistem</h3>
+                    
+                    <div class="space-y-6">
+                        <div class="border-b pb-6">
+                            <h4 class="text-md font-medium text-gray-700 mb-4">Informasi Login Admin</h4>
+                            <div class="bg-indigo-50 rounded-lg p-4">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <p class="text-sm text-gray-600">Username Admin</p>
+                                        <p class="text-xl font-bold text-indigo-600">admin</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-gray-600">Password Admin</p>
+                                        <p class="text-xl font-bold text-indigo-600">admin123</p>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-3"><i class="fas fa-info-circle mr-1"></i>Gunakan credential ini untuk login sebagai administrator</p>
+                            </div>
+                        </div>
+
+                        <div class="border-b pb-6">
+                            <h4 class="text-md font-medium text-gray-700 mb-4">Manajemen Data</h4>
+                            <div class="flex flex-wrap gap-3">
+                                <button onclick="resetAllData()" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition">
+                                    <i class="fas fa-trash mr-2"></i>Reset Semua Data
+                                </button>
+                                <button onclick="backupData()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                                    <i class="fas fa-download mr-2"></i>Backup Data
+                                </button>
+                                <button onclick="document.getElementById('importFile').click()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+                                    <i class="fas fa-upload mr-2"></i>Restore Data
+                                </button>
+                                <input type="file" id="importFile" class="hidden" accept=".json" onchange="restoreData(event)">
+                            </div>
+                        </div>
+
+                        <div>
+                            <h4 class="text-md font-medium text-gray-700 mb-4">Informasi Aplikasi</h4>
+                            <div class="bg-gray-50 rounded-lg p-4">
+                                <p class="text-sm text-gray-600">Aplikasi Sistem Asesmen Murid</p>
+                                <p class="text-sm text-gray-600">SMP Negeri 1 Nagawutung</p>
+                                <p class="text-xs text-gray-500 mt-2">Versi 1.0.0</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function resetAllData() {
+            if (confirm('PERINGATAN: Ini akan menghapus SEMUA data! Apakah Anda yakin?')) {
+                if (confirm('Apakah Anda benar-benar yakin? Tindakan ini tidak dapat dibatalkan.')) {
+                    appData = JSON.parse(JSON.stringify(defaultData));
+                    saveData();
+                    renderPengaturan();
+                    showToast('Semua data telah direset!', 'error');
+                }
+            }
+        }
+
+        function backupData() {
+            const dataStr = JSON.stringify(appData, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'backup_asesmen_' + new Date().toISOString().split('T')[0] + '.json';
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Backup berhasil diunduh!');
+        }
+
+        function restoreData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (importedData.students && importedData.socialEmotional) {
+                        appData = importedData;
+                        saveData();
+                        showToast('Data berhasil direstore!');
+                        setTimeout(() => location.reload(), 1000);
+                    } else {
+                        throw new Error('Format file tidak valid');
+                    }
+                } catch (error) {
+                    showToast('Gagal restore data: ' + error.message, 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // ==================== MODAL & TOAST ====================
+        let currentModal = null;
+
+        function showModal(title, content) {
+            const modalHTML = `
+                <div id="modalOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onclick="if(event.target === this) closeModal()">
+                    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg animate-fade-in">
+                        <div class="px-6 py-4 border-b">
+                            <h3 class="text-lg font-semibold text-gray-800">${title}</h3>
+                        </div>
+                        <div class="px-6 py-4">
+                            ${content}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            currentModal = document.getElementById('modalOverlay');
+        }
+
+        function closeModal() {
+            if (currentModal) {
+                currentModal.remove();
+                currentModal = null;
+            }
+        }
+
+        function showToast(message, type = 'success') {
+            const colors = {
+                success: 'bg-green-500',
+                error: 'bg-red-500',
+                warning: 'bg-yellow-500',
+                info: 'bg-blue-500'
+            };
+            
+            const toastHTML = `
+                <div class="fixed bottom-4 right-4 ${colors[type]} text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} mr-2"></i>
+                    ${message}
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', toastHTML);
+            setTimeout(() => {
+                const toast = document.querySelector('.fixed.bottom-4.right-4');
+                if (toast) toast.remove();
+            }, 3000);
+        }
+
+        // Auto-hide sidebar on mobile when clicking outside
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Sistem Asesmen Murid siap digunakan!');
+            console.log('Login Admin - Username: admin | Password: admin123');
+        });
+    </script>
+</body>
+</html>
